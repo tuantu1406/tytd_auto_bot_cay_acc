@@ -58,62 +58,118 @@ func main() {
 	defer stop()
 
 	var wg sync.WaitGroup
-	var players []*tytd_go.Player
-
+startAccounts:
 	for i, acc := range accounts {
 		select {
 		case <-ctx.Done():
 			fmt.Println("\n🛑 Nhận tín hiệu dừng, ngừng khởi chạy các tài khoản còn lại...")
-			break
+			break startAccounts
 		default:
 		}
 
-		p := &tytd_go.Player{
-			Username:      acc.Username,
-			Password:      acc.Password,
-			ServerID:      acc.ServerID,
+		wg.Add(1)
+		go func(idx int, account tytd_go.GameAccount) {
+			defer wg.Done()
+			runGrindAccount(ctx, idx+1, len(accounts), account)
+		}(i, acc)
+
+		// Độ trễ an toàn giữa các lượt login tránh Funtap chặn IP do spam
+		if i < len(accounts)-1 {
+			delay := time.Duration(*delaySec) * time.Second
+			if delay < 0 {
+				delay = 0
+			}
+			timer := time.NewTimer(delay)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				fmt.Println("\n🛑 Nhận tín hiệu dừng, ngừng khởi chạy các tài khoản còn lại...")
+				break startAccounts
+			case <-timer.C:
+			}
+		}
+	}
+
+	if ctx.Err() == nil {
+		fmt.Println("--------------------------------------------------------------------------------")
+		fmt.Println("✨ Đã khởi chạy quản lý tự động cho tất cả tài khoản.")
+		fmt.Println("💡 Nhấn Ctrl + C để dừng phần mềm và ngắt kết nối an toàn.")
+
+		// Chờ tín hiệu kết thúc từ người dùng
+		<-ctx.Done()
+	}
+	fmt.Println("\n⏳ Đang ngắt kết nối các tài khoản an toàn...")
+	wg.Wait()
+	fmt.Println("👋 Đã dừng phần mềm. Tạm biệt đạo hữu!")
+}
+
+const (
+	firstReconnectDelay = 10 * time.Second
+	maxReconnectDelay   = 2 * time.Minute
+	stableSessionPeriod = 5 * time.Minute
+)
+
+func runGrindAccount(ctx context.Context, index, total int, account tytd_go.GameAccount) {
+	delay := firstReconnectDelay
+	for attempt := 1; ; attempt++ {
+		if ctx.Err() != nil {
+			return
+		}
+		player := &tytd_go.Player{
+			Username:      account.Username,
+			Password:      account.Password,
+			ServerID:      account.ServerID,
 			GrindRun:      true,
-			Peach:         true,
-			Maohiem:       true,
 			ClanMember:    make(map[uint64]string),
 			NotiChan:      make(chan tytd_go.NotifyMGS, 64),
 			AutoStartChan: make(chan uint64, 10),
 		}
-		players = append(players, p)
+		fmt.Printf("[%d/%d] 🔑 Đang đăng nhập: %s (Server: %d, lần %d)...\n", index, total, player.Username, player.ServerID, attempt)
 
-		wg.Add(1)
-		go func(idx int, player *tytd_go.Player) {
-			defer wg.Done()
-			fmt.Printf("[%d/%d] 🔑 Đang đăng nhập: %s (Server: %d)...\n", idx+1, len(accounts), player.Username, player.ServerID)
-			
-			// Khởi động bot trực tiếp không qua Telegram
-			ok := player.Run()
-			if !ok {
-				fmt.Printf("[%s] ❌ Đăng nhập / kết nối thất bại!\n", player.Username)
+		stopWatchDone := make(chan struct{})
+		go func() {
+			select {
+			case <-ctx.Done():
+				player.StopConnection()
+			case <-stopWatchDone:
 			}
-		}(i, p)
+		}()
 
-		// Độ trễ an toàn giữa các lượt login tránh Funtap chặn IP do spam
-		if i < len(accounts)-1 {
-			time.Sleep(time.Duration(*delaySec) * time.Second)
+		started := time.Now()
+		connected := player.Run()
+		close(stopWatchDone)
+		if ctx.Err() != nil {
+			player.StopConnection()
+			return
+		}
+
+		if time.Since(started) >= stableSessionPeriod {
+			delay = firstReconnectDelay
+		}
+		if connected {
+			fmt.Printf("[%s] ⚠️ Phiên game đã ngắt; sẽ đăng nhập lại sau %s.\n", player.Username, delay)
+		} else {
+			fmt.Printf("[%s] ⚠️ Đăng nhập/kết nối thất bại; sẽ thử lại sau %s.\n", player.Username, delay)
+		}
+		if !waitContext(ctx, delay) {
+			return
+		}
+		delay *= 2
+		if delay > maxReconnectDelay {
+			delay = maxReconnectDelay
 		}
 	}
+}
 
-	fmt.Println("--------------------------------------------------------------------------------")
-	fmt.Println("✨ Tất cả tài khoản đã được kích hoạt chế độ Cày Level 100 tự động.")
-	fmt.Println("💡 Nhấn Ctrl + C để dừng phần mềm và ngắt kết nối an toàn.")
-
-	// Chờ tín hiệu kết thúc từ người dùng
-	<-ctx.Done()
-	fmt.Println("\n⏳ Đang ngắt kết nối các tài khoản an toàn...")
-
-	// Dừng từng player
-	for _, p := range players {
-		p.StopGrind100()
+func waitContext(ctx context.Context, delay time.Duration) bool {
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
 	}
-
-	time.Sleep(2 * time.Second)
-	fmt.Println("👋 Đã dừng phần mềm. Tạm biệt đạo hữu!")
 }
 
 func fileExists(filename string) bool {

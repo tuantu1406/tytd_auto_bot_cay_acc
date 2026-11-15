@@ -570,11 +570,13 @@ type Player struct {
 	gatherWantID  int64 // candidate under INSIDE_VIEW re-check
 	gatherWantAt  time.Time
 
-	conn      *websocket.Conn
-	ctx       context.Context
-	cancel    context.CancelFunc
-	writeChan chan []byte
-	DB        *gorm.DB
+	conn          *websocket.Conn
+	ctx           context.Context
+	cancel        context.CancelFunc
+	writeChan     chan []byte
+	lifecycleMu   sync.Mutex
+	stopRequested bool
+	DB            *gorm.DB
 
 	// dbID is the users-row primary key this session belongs to, captured
 	// at login while p.UID still holds the session-key id (doLogin replaces
@@ -672,7 +674,6 @@ func (p *Player) doWrite() {
 	for {
 		select {
 		case <-p.ctx.Done():
-			log.Println(p.Username, "server disconnected")
 			return
 		case msg := <-p.writeChan:
 			// A half-open peer makes WriteMessage block until the kernel
@@ -682,7 +683,7 @@ func (p *Player) doWrite() {
 			err := p.conn.WriteMessage(2, msg)
 			if err != nil {
 				p.cancel()
-				log.Println(p.Username, "can't write, disconnect")
+				log.Printf("[%s] websocket write error: %v", p.Username, err)
 				return
 			}
 		}
@@ -699,12 +700,25 @@ func (p *Player) notifyRunning() {
 }
 
 func (p *Player) Run() bool {
+	p.lifecycleMu.Lock()
+	stopRequested := p.stopRequested
+	p.lifecycleMu.Unlock()
+	if stopRequested {
+		return true
+	}
+
 	token, wsURL, err := p.login()
 	if err != nil {
 		log.Printf("[%s] ĐĂNG NHẬP THẤT BẠI (chat %d, server %d): %v", p.Username, p.ChatID, p.ServerID, err)
 		p.Notify = true
 		p.sendNotify("đăng nhập thất bại: " + err.Error())
 		return false
+	}
+	p.lifecycleMu.Lock()
+	stopRequested = p.stopRequested
+	p.lifecycleMu.Unlock()
+	if stopRequested {
+		return true
 	}
 	p.Running = true
 	p.notifyRunning()
@@ -719,6 +733,10 @@ func (p *Player) Run() bool {
 		return false
 	}
 	defer c.Close()
+	defer func() {
+		p.Running = false
+		p.notifyRunning()
+	}()
 	// Control-frame handlers refresh the read deadline too, so a live socket
 	// that only ever sees pong traffic is never mistaken for half-open.
 	c.SetPingHandler(func(string) error {
@@ -729,9 +747,16 @@ func (p *Player) Run() bool {
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	p.lifecycleMu.Lock()
 	p.conn = c
 	p.ctx = ctx
 	p.cancel = cancel
+	stopRequested = p.stopRequested
+	p.lifecycleMu.Unlock()
+	if stopRequested {
+		cancel()
+		return true
+	}
 	p.writeChan = make(chan []byte, 16)
 	go p.doWrite()
 
@@ -746,7 +771,16 @@ func (p *Player) Run() bool {
 
 	p.taskKick = make(chan struct{}, 1)
 	go p.wsHandler()
-	time.Sleep(5 * time.Second)
+	settle := time.NewTimer(5 * time.Second)
+	select {
+	case <-ctx.Done():
+		settle.Stop()
+		return true
+	case <-settle.C:
+	}
+	if ctx.Err() != nil {
+		return true
+	}
 	go p.autoDoSomethings()
 	go p.autoCheckInfoClan()
 	go p.autoChuot()
@@ -789,14 +823,30 @@ func (p *Player) Run() bool {
 
 func (p *Player) wsKeepAlive() {
 	for {
+		timer := time.NewTimer(5 * time.Second)
 		select {
 		case <-p.ctx.Done():
-			log.Println(p.Username, "server disconnected")
+			timer.Stop()
 			return
-		default:
-			time.Sleep(5 * time.Second)
+		case <-timer.C:
 			p.write(pack.Pack(PING_CMD, []byte{}, p.UID))
 		}
+	}
+}
+
+// StopConnection closes the live game socket and is safe to call while Run is
+// still logging in. If the connection is not installed yet, Run observes the
+// request immediately after dialing and closes it before starting workers.
+func (p *Player) StopConnection() {
+	p.lifecycleMu.Lock()
+	p.stopRequested = true
+	cancel, conn := p.cancel, p.conn
+	p.lifecycleMu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+	if conn != nil {
+		_ = conn.Close()
 	}
 }
 
@@ -810,7 +860,9 @@ func (p *Player) wsHandler() {
 			p.conn.SetReadDeadline(time.Now().Add(wsReadTimeout))
 			_, message, err := p.conn.ReadMessage()
 			if err != nil {
-				log.Printf("[Reader] Read error: %v", err)
+				if p.ctx.Err() == nil {
+					log.Printf("[%s] websocket read error: %v", p.Username, err)
+				}
 				p.cancel() // trigger shutdown
 				return
 			}
@@ -1442,17 +1494,23 @@ func (p *Player) autoMaohiem() {
 			// log.Println(p.Username, "ngung mao hiem")
 			return
 		default:
+			// The level-100 orchestrator owns adventure pacing while it is on.
+			// Running both loops sends duplicate VENTURE_CMD frames; the CLI
+			// does not have a VIP level, which used to make this loop spin hot.
+			if p.GrindRun {
+				time.Sleep(3 * time.Second)
+				continue
+			}
 			if !p.Maohiem {
 				time.Sleep(10 * time.Second)
 				continue
 			}
 			p.write(pack.Pack(VENTURE_CMD, []byte{}, p.UID))
+			wait := 10 * time.Second
 			if p.VipLevel > 1 {
-				time.Sleep(3 * time.Second)
+				wait = 3 * time.Second
 			}
-			if p.VipLevel == 1 {
-				time.Sleep(10 * time.Second)
-			}
+			time.Sleep(wait)
 		}
 	}
 }
@@ -1518,6 +1576,12 @@ func (p *Player) autoPeach() {
 		case <-p.ctx.Done():
 			return
 		default:
+		}
+		// autoGrindLoop already chops with the dream-level cap and processes
+		// equipment drops. Keep this older toggle loop from doubling its frames.
+		if p.GrindRun {
+			time.Sleep(3 * time.Second)
+			continue
 		}
 		if !p.Peach && !p.taskDrivenChopOK() {
 			count = 0
