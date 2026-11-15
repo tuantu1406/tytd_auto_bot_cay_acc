@@ -24,10 +24,10 @@ import (
 type GrindState struct {
 	mu           sync.Mutex
 	running      bool
-	currentStage int32     // Ải mạo hiểm hiện tại
-	stallFights  int       // Số lần mạo hiểm thua liên tiếp (để lùi lại cày đồ)
-	pauseAdvTill time.Time // Tạm hoãn mạo hiểm khi bị kẹt ải
-	chopsCount   int       // Đếm số lần chặt đào
+	currentStage int32          // Ải mạo hiểm hiện tại
+	stallFights  int            // Số lần mạo hiểm thua liên tiếp (để lùi lại cày đồ)
+	pauseAdvTill time.Time      // Tạm hoãn mạo hiểm khi bị kẹt ải
+	chopsCount   int            // Đếm số lần chặt đào
 	equippedIDs  map[int32]bool // Lưu các trang bị đã mặc
 }
 
