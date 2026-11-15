@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package proto;
+option go_package = ".;proto";
+
+// Minimal BallGVG map schema recovered from CityMsg/BallGVG.proto in client
+// build 4.0.00.40105. The full request id is 21111; its response arrives on
+// transport type 1111 (hex 0457).
+message BallGVGGetPlaceInfoReqMsg {
+  int32 activityId = 1;
+}
+
+message BallGVGPlaceCampMemberTemp {
+  int32 campId = 1;
+  int32 num = 2;
+}
+
+message BallGVGPlaceSimpleTemp {
+  int32 placeId = 1;
+  int32 seizeCampId = 2;
+  repeated BallGVGPlaceCampMemberTemp campMember = 3;
+}
+
+message BallGVGGetPlaceInfoRespMsg {
+  int32 ret = 1;
+  repeated BallGVGPlaceSimpleTemp place = 2;
+}

@@ -1,0 +1,549 @@
+{{define "content"}}
+{{/* Bồng Lai / Thiên Ma mini app — one template, two boards (GI_WHICH).
+     Layer stack mirrors the client's own draw order over the same world box:
+     c1 = water + terrain sprites from the client atlas13 (bake, never moves),
+     ct = union territory hexes (the hex ART is the palette — atlas rect
+     hexBase+|ci|%span, no tint math needed) + place plate/owner text,
+     c2 = city building sprites depth-sorted (bake), co = rAF fight pulse +
+     march ribbons. People ARE on the wire here (opcode hunt closed
+     2026-10-19): marches ride the 1aa6 push into the SSE frame
+     (f.gi.routes, badges interpolate on TK.clock), and the standing
+     roster comes from /events/mapview?w=gi (206823, the client's fixed
+     home-block vec) asked once on boot and again on every camera stop.
+     Names are never invented: empty roster names borrow the march
+     ledger's name server-side, else the row reads "người <id>". */}}
+<div class="gi-app">
+  <div class="gi-top">
+    <b id="gi-title">Đảo</b>
+    <span id="gi-vstat" class="gi-status">👁 …</span>
+    <span id="gi-status" class="gi-status">đang tải cảnh…</span>
+  </div>
+  <div class="gi-stage" id="gi-stage">
+    <div class="gi-cam" id="gi-cam">
+      <canvas id="gi-c1"></canvas>
+      <canvas id="gi-ct"></canvas>
+      <canvas id="gi-c2"></canvas>
+      <canvas id="gi-co"></canvas>
+    </div>
+    <canvas id="gi-tx"></canvas>
+    <div class="gi-zoom">
+      <button type="button" id="gi-zin" title="Phóng to">+</button>
+      <button type="button" id="gi-zout" title="Thu nhỏ">−</button>
+      <button type="button" id="gi-fit" title="Vừa khung">⤢</button>
+    </div>
+    <div class="gi-hud">
+      <button type="button" id="gi-boost">⚡ Tăng tốc</button>
+      <button type="button" id="gi-heal">💧 Hồi máu</button>
+    </div>
+    <div class="tk-pop gi-pop" id="gi-pop" style="display:none"></div>
+  </div>
+</div>
+
+<script src="/webstatic/appkit.js"></script>
+<style>
+.gi-app{position:fixed;inset:0;background:#0a1220}
+.gi-top{position:absolute;top:calc(env(safe-area-inset-top) + 6px);left:8px;right:76px;z-index:6;
+  display:flex;align-items:center;gap:8px;padding:5px 10px;color:#ebebeb;font-size:14px;
+  background:rgba(10,18,32,.55);border:1px solid rgba(60,80,105,.4);border-radius:10px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
+.gi-status{margin-left:auto;font-size:11px;color:#8fa2b5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gi-stage{position:absolute;inset:0;overflow:hidden;touch-action:none}
+.gi-cam{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.gi-cam canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* Screen-space text layer (kunlun/cuuu parity): crisp at any zoom, never eats taps. */
+#gi-tx{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;display:block}
+.gi-zoom{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 44px);display:flex;flex-direction:column;gap:6px;z-index:5}
+.gi-zoom button{width:36px;height:36px;border-radius:8px;border:0;background:#1b2433;color:#dfe8f2;font-size:18px;line-height:1}
+.gi-hud{position:absolute;left:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);display:flex;gap:6px;z-index:5}
+.gi-hud button{padding:8px 11px;border-radius:9px;border:0;background:#1b2433;color:#dfe8f2;font-size:12px}
+.gi-pop{position:absolute;z-index:9;min-width:200px;max-width:80%;background:rgba(10,16,26,.97);
+  border:1px solid #2c3a4e;border-radius:10px;padding:9px 11px;color:#dfe8f2;font-size:13px}
+.gi-pop b{display:block;margin-bottom:3px}
+.gi-pop .o{color:#9fb2c6;font-size:12px}
+.gi-pop .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.gi-pop button{padding:6px 10px;border-radius:8px;border:0;background:#27405e;color:#eaf2fb;font-size:12px}
+.gi-pop button.danger{background:#5e2a2a}
+.gi-pop button.item{background:#4a3a1e}
+</style>
+
+<script>
+var GI_CSRF = '{{.CSRF}}';
+var GI_WHICH = '{{.Data.which}}';           // bonglai | thienma (one template, two routes)
+var giSt = null, giAtlas = null, giImgs = {}, giFrame = null, giK = 1;
+var giStage, giCam, giC1, giCt, giC2, giCo, giCamK, giPopFor = null, giTx;
+// Screen-space text parity + rAF idle-skip (kunlun #42, cuuu port) — shared by
+// Thiên Ma and Bồng Lai (one page, two routes).
+var giAnimDirty = true, giTpx = 0, giTox = 0, giToy = 0;
+function giPX(x) { return giTox + x * giTpx; }
+function giPY(y) { return giToy + y * giTpx; }
+function giTextSpace() {
+  var W = giStage.clientWidth, H = giStage.clientHeight;
+  if (!W || !H) return null;
+  var dpr = window.devicePixelRatio || 1;
+  var bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+  if (giTx.width !== bw || giTx.height !== bh) { giTx.width = bw; giTx.height = bh; }
+  var c = giTx.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, W, H);
+  return c;
+}
+
+function giBoot() {
+  TK.fetchJSON('/events/mapstatic?which=' + GI_WHICH)
+    .then(function (st) {
+      if (!st.gi || !st.gi.terrainR) throw new Error('no gi scene');
+      giSt = st;
+      document.getElementById('gi-title').textContent =
+        GI_WHICH === 'thienma' ? 'Đảo Thiên Ma' : 'Đảo Bồng Lai';
+      var urls = [TK.artURL('gi', st.gi.atlas)];
+      st.cities.forEach(function (c) { if (c.icon) urls.push(TK.artURL('gi', c.icon)); });
+      return TK.preload(urls);
+    })
+    .then(function (m) {
+      var aUrl = TK.artURL('gi', giSt.gi.atlas);
+      giAtlas = m[aUrl]; delete m[aUrl]; giImgs = m;
+      giResize(); giBakeGround(); giBakeCities();
+      TK.heartbeat(GI_WHICH); requestAnimationFrame(giLoop);
+      giMapView(true); // standing people for the first view (kunlun parity)
+    })
+    .catch(function () { giStatus('không tải được nền đảo (binary cũ? khởi động lại bot)'); });
+}
+function giStatus(t) { var el = document.getElementById('gi-status'); if (el) el.textContent = t; }
+function giVStat(t) { var el = document.getElementById('gi-vstat'); if (el) el.textContent = t; }
+
+// ---- view-window detail (206823 · /events/mapview?w=gi) ----------------------
+// The islands have no tile grid to window, so there is no camera-rect
+// param: the server asks ONE pull of the client's fixed 16-city home-block
+// vec (any wider ask is ret=6833). Asked on boot and on every camera STOP
+// (kunlun's kuCamTimer idiom) with a 15s floor so a fidgety thumb never
+// queues island pulls; the seq guard drops stale answers. cities = who
+// STANDS per city ({hp,cur,dead,fight,u,un,heads:[{n,p,o}]}); marches do
+// NOT ride this answer to the page — they land in the SSE frame via the
+// server ledger fold instead.
+var giView = { cities: {} }, giViewSeq = 0, giLastViewT = 0, giCamTimer = 0;
+// ---- marches (owner bug3 2026-10-19 "lúc thấy lúc không") --------------------
+// Marches ride the SSE map frame — the page NEVER polls them. The server
+// re-issues the frame with a FRESH march list from the in-RAM 1aa6 ledgers on
+// EVERY tick even while the 206819 minimap pull itself is failing (the blink
+// was the push, not the page). Empty rows on a good frame = truly nobody
+// marching; idle/err frames leave the cache alone (stale rows self-expire
+// via the pr>=1 guard while drawing). giHP is the twin cache for the last-
+// known REAL per-city HP the server ledger holds (the minimap proto has no
+// hp fields) — drawn as bars over EVERY city, not just the main one (owner
+// 2026-10-19 "thiếu show hp của city, mới thấy show hp của thành chính").
+var giRoutes = [], giHP = null;
+function giMapView(force) {
+  var nowT = Date.now();
+  if (!force && nowT - giLastViewT < 15000) return;
+  giLastViewT = nowT;
+  var seq = ++giViewSeq;
+  giVStat('👁 …');
+  fetch('/events/mapview?w=gi&which=' + GI_WHICH, { credentials: 'same-origin' })
+    .then(function (r) {
+      if (r.ok) return r.json();
+      return r.text().then(function (t) { throw new Error((t || '').trim() || ('HTTP ' + r.status)); });
+    })
+    .then(function (j) {
+      if (!j || seq !== giViewSeq) return; // stale answer from an older pull
+      giView = { cities: j.cities || {} };
+      giAnimDirty = true; // standing dots + chips live on the co/text layers
+      var nC = Object.keys(giView.cities).length;
+      var n = j.heads || 0;
+      giVStat('👁 ' + nC + ' thành' + (n ? ' · ' + n + ' người' : ' · không ai đứng'));
+      if (giPopFor) giPopPeople(giPopFor);
+    })
+    .catch(function (e) {
+      if (seq !== giViewSeq) return;
+      // Honest feedback: "no people" must read differently from "pull failed".
+      giVStat('👁 ⚠ ' + ((e && e.message) || 'lỗi'));
+    });
+}
+
+function giResize() {
+  TK.fitStageFill(giStage, giCam, giSt.worldW / giSt.worldH); // fill the screen, pan to see the rest
+  giK = TK.fitSize(giSt.worldW, giSt.worldH, 5000, 14000000);
+  var W = Math.round(giSt.worldW * giK), H = Math.round(giSt.worldH * giK);
+  [giC1, giCt, giC2, giCo].forEach(function (cv) { TK.setSize(cv, W, H); });
+  giAnimDirty = true; // setSize wipes the co layer
+  giCamK.clamp(); giCamK.apply();
+}
+
+// c1: water + the client's terrain diamonds, bottom-anchored exactly like
+// giDrawScene (sprite feet touch the tile's lower diamond edge).
+function giBakeGround() {
+  var W = giC1.width, H = giC1.height, c = giC1.getContext('2d');
+  c.fillStyle = giSt.gi.terrainC[5] || '#122b45'; c.fillRect(0, 0, W, H);
+  if (!giAtlas) return;
+  var th = giSt.tileH * giK;
+  (giSt.tiles || []).forEach(function (t) {
+    if (t.g === 5) return; // client leaves water tiles unpainted
+    var x = t.x * W, y = t.y * H;
+    var r = giSt.gi.terrainR[t.g];
+    if (!r) {
+      TK.diamond(c, x, y, giSt.tileW * giK, th);
+      c.fillStyle = giSt.gi.terrainC[t.g] || '#244855'; c.fill();
+      return;
+    }
+    var w = r[2] * giK, h = r[3] * giK;
+    c.drawImage(giAtlas, r[0], r[1], r[2], r[3], x - w / 2, y + th / 2 - h, w, h);
+  });
+}
+
+// c2: building sprites, depth-sorted so bottom rows overlap top rows.
+function giBakeCities() {
+  var c = giC2.getContext('2d');
+  c.clearRect(0, 0, giC2.width, giC2.height);
+  var cs = (giSt.cities || []).slice().sort(function (a, b) { return a.y - b.y; });
+  cs.forEach(function (v) {
+    if (!v.icon) return;
+    var im = giImgs[TK.artURL('gi', v.icon)]; if (!im) return;
+    var w = (v.w || 0.06) * giC2.width;              // client sprite size over the same box
+    var h = w * im.naturalHeight / im.naturalWidth;
+    c.drawImage(im, v.x * giC2.width - w / 2, v.y * giC2.height - h / 2, w, h);
+  });
+}
+
+// ---- live layer: territory hexes + name/owner plates ------------------------
+TK.mapFrame(GI_WHICH, function (f) {
+  giFrame = f;
+  // March truth rides every good frame (the server re-issues it from the
+  // RAM ledgers even when the minimap pull fails); idle/err frames must
+  // not blank the cache — rows die client-side at pr>=1 instead.
+  if (!f.idle && !f.err) {
+    giRoutes = (f.gi && f.gi.routes) || [];
+    giHP = (f.gi && f.gi.cities) || null;
+  }
+  giAnimDirty = true; // plates/rings/marches live on the co+text layers
+  TK.status(document.getElementById('gi-status'), f, 'trực tiếp · ');
+  giPaint();
+});
+
+function giLiveMap() {
+  var m = {};
+  if (giFrame && giFrame.cities) giFrame.cities.forEach(function (c) { m[c.id] = c; });
+  return m;
+}
+function giPaint() {
+  var c = giCt.getContext('2d');
+  c.clearRect(0, 0, giCt.width, giCt.height);
+  var f = giFrame;
+  if (!f || f.idle || f.err) return;
+  var W = giCt.width, H = giCt.height;
+  var live = giLiveMap(), slot = {};
+  Object.keys(live).forEach(function (k) {
+    var cc = live[k];
+    if (cc.owner && cc.ci != null) slot[cc.id] = cc.ci;
+  });
+  var g = giSt.gi, span = Object.keys(g.hexR).length, th = giSt.tileH * giK;
+  (giSt.tiles || []).forEach(function (t) {
+    if (!t.c || !(t.c in slot)) return;
+    var r = g.hexR[g.hexBase + (Math.abs(slot[t.c]) % span)];
+    if (!r) return;
+    var w = r[2] * giK, h = r[3] * giK;
+    c.globalAlpha = t.k ? 0.95 : 0.8;
+    c.drawImage(giAtlas, r[0], r[1], r[2], r[3], t.x * W - w / 2, t.y * H - h / 2, w, h);
+  });
+  c.globalAlpha = 1;
+  // place plates (green name + [owner]) moved to the SCREEN-SPACE text layer in
+  // giLoop — baked text was mush at zoom 8× (kunlun #42 parity).
+}
+
+// ---- rAF: fight pulse (no marches — no all-player feed for this board) ------
+// Idle-skip: giCo is bake-sized (up to 14Mpx) — repaint ONLY while a fight
+// ring actually pulses or something changed; same pass draws the screen-space
+// nameplates so text stays crisp at any zoom.
+function giLoop() {
+  requestAnimationFrame(giLoop);
+  if (document.hidden || !giSt) return;
+  var f = giFrame;
+  var live = giLiveMap();
+  var anim = false;
+  if (f && !f.idle && !f.err && f.cities) {
+    for (var ai = 0; ai < giSt.cities.length; ai++) {
+      var lc0 = live[giSt.cities[ai].id];
+      if (lc0 && lc0.fight) { anim = true; break; }
+    }
+  }
+  // Live marches animate every frame until they land (rows come from the
+  // SSE cache — server prunes past arrival, the pr>=1 guard covers the gap).
+  var liveRoutes = giRoutes || [];
+  if (liveRoutes.length) anim = true;
+  if (!anim && !giAnimDirty) return;
+  giAnimDirty = false;
+  var c = giCo.getContext('2d');
+  var W = giCo.width, H = giCo.height;
+  c.clearRect(0, 0, W, H);
+  var tc = giTextSpace();
+  if (tc && giCo.width && giCam.clientWidth) {
+    giTpx = giCamK.s * giCam.clientWidth / giCo.width;
+    giTox = giCam.offsetLeft + giCamK.tx;
+    giToy = giCam.offsetTop + giCamK.ty;
+  } else giTpx = 0;
+  var cityPos = {};
+  (giSt.cities || []).forEach(function (v) { cityPos[v.id] = v; });
+  // Real HP bars on EVERY city (owner 2026-10-19 "thiếu show hp của city"):
+  // last-known 1aa7/1abe HP from the server ledger, riding the SSE frame —
+  // the minimap proto itself has no hp fields. Exact numbers stay in the
+  // popup; here it's bar + tiny cur/hp caption.
+  if (giHP) Object.keys(giHP).forEach(function (k) {
+    var v = cityPos[+k], row = giHP[k];
+    if (!v || !row || !row.hp) return;
+    var cx = v.x * W, cy = v.y * H;
+    var bw = Math.max(26, (v.w || 0.06) * W), bh = Math.max(3, 4.5 * giK);
+    var bx = cx - bw / 2, by = cy - ((v.h || v.w || 0.06) * H) * 0.62 - bh;
+    var ratio = row.cur > row.hp ? 1 : (row.cur > 0 ? row.cur / row.hp : 0);
+    c.fillStyle = 'rgba(6,10,18,.72)';
+    c.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
+    c.fillStyle = row.dead ? '#7c8794' : (ratio > 0.5 ? '#7fdc8c' : (ratio > 0.25 ? '#e8d36a' : '#ff6a5c'));
+    c.fillRect(bx, by, bw * ratio, bh);
+    if (tc && giTpx > 0) {
+      var fh = Math.max(8, 9 * giK) * giTpx;
+      tc.font = fh + 'px system-ui, sans-serif';
+      tc.textAlign = 'center'; tc.textBaseline = 'bottom';
+      tc.fillStyle = 'rgba(8,12,20,.72)';
+      var cap = (row.cur || 0) + '/' + row.hp, twH = tc.measureText(cap).width;
+      var sy = giPY(by - 2 * giK);
+      tc.fillRect(giPX(cx) - twH / 2 - 3 * giK * giTpx, sy - fh - 2 * giK * giTpx,
+        twH + 6 * giK * giTpx, fh + 4 * giK * giTpx);
+      tc.fillStyle = row.dead ? '#aab4c0' : '#e8f0ea';
+      tc.fillText(cap, giPX(cx), sy);
+    }
+  });
+  // Standing people (from /events/mapview?w=gi): union-coloured dots fan
+  // around the city centre — own side green, everyone else red (O was
+  // decided server-side where both unions are known). ≥7 dots fold into a
+  // ×N badge; the name chip hangs under the dots on the text layer.
+  Object.keys(giView.cities).forEach(function (k) {
+    var row = giView.cities[k];
+    if (!row || !row.heads || !row.heads.length) return;
+    var v = cityPos[+k];
+    if (!v) return;
+    var cx = v.x * W, cy = v.y * H;
+    var dotR = Math.max(2.5, 4.5 * giK);
+    var n = Math.min(row.heads.length, 7);
+    for (var qi = 0; qi < n; qi++) {
+      var qxx = cx, qyy = cy;
+      if (n > 1) {
+        var ang = qi / n * 6.2832 - Math.PI / 2;
+        qxx += Math.cos(ang) * dotR * 2.2; qyy += Math.sin(ang) * dotR * 2.2;
+      }
+      c.fillStyle = row.heads[qi].o ? '#7fdc8c' : '#ff6a5c';
+      c.beginPath(); c.arc(qxx, qyy, dotR, 0, 6.2832); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = Math.max(1, 1.2 * giK); c.stroke();
+    }
+    var nm = row.heads[0].n || ('người ' + row.heads[0].p);
+    if (row.heads.length > n) nm += ' ×' + row.heads.length;
+    if (tc && giTpx > 0) {
+      var fsS = Math.max(8, 10 * giK) * giTpx;
+      tc.font = fsS + 'px system-ui, sans-serif';
+      tc.textAlign = 'center'; tc.textBaseline = 'top';
+      var twS = tc.measureText(nm).width;
+      tc.fillStyle = 'rgba(8,12,20,.66)';
+      tc.fillRect(giPX(cx) - twS / 2 - 4 * giK * giTpx, giPY(cy + dotR * 2.6),
+        twS + 8 * giK * giTpx, fsS + 4 * giK * giTpx);
+      tc.fillStyle = row.heads[0].o ? '#b8f2c8' : '#f2c2bd';
+      tc.fillText(nm, giPX(cx), giPY(cy + dotR * 2.6 + 2 * giK));
+    }
+  });
+  // Marches (owner bug 4 2026-10-19: "đường chỉ bé quá — để chuỗi mũi tên
+  // chạy liên tục"): fat soft guide line unit→destination + a CHAIN of
+  // chevrons flowing toward the destination (phase = TK.clock()/45 so the
+  // flow is continuous), badge + nameplate on top. Drawn BEFORE the idle
+  // return — the SSE march cache outlives idle/err frames on purpose.
+  var nowMs = TK.clock();
+  liveRoutes.forEach(function (r) {
+    var vf = cityPos[r.fc], vt = cityPos[r.tc];
+    if (!vf || !vt) return;
+    var dur = r.ar - r.t;
+    if (dur <= 0) return;
+    var pr = (nowMs - r.t) / dur;
+    if (pr < 0) pr = 0;
+    if (pr >= 1) return;
+    var xa = vf.x * W, ya = vf.y * H, xb = vt.x * W, yb = vt.y * H;
+    var bx = xa + (xb - xa) * pr, by = ya + (yb - ya) * pr; // unit badge
+    c.strokeStyle = r.o ? 'rgba(127,220,140,.30)' : 'rgba(255,106,92,.26)';
+    c.lineWidth = Math.max(4, 6 * giK);
+    c.beginPath(); c.moveTo(bx, by); c.lineTo(xb, yb); c.stroke();
+    var dx = xb - bx, dy = yb - by, len = Math.hypot(dx, dy);
+    if (len > 3) {
+      var ang = Math.atan2(dy, dx);
+      var sp = Math.max(16, 22 * giK);
+      var sz = Math.max(4.5, 7 * giK);
+      var phase = (nowMs / 45) % sp; // chevrons slide destination-ward
+      c.fillStyle = r.o ? '#8ee79c' : '#ff7a6b';
+      for (var dd = phase; dd <= len; dd += sp) {
+        var px = bx + Math.cos(ang) * dd, py = by + Math.sin(ang) * dd;
+        c.beginPath();
+        c.moveTo(px + Math.cos(ang) * sz, py + Math.sin(ang) * sz);
+        c.lineTo(px + Math.cos(ang + 2.4) * sz, py + Math.sin(ang + 2.4) * sz);
+        c.lineTo(px + Math.cos(ang - 2.4) * sz, py + Math.sin(ang - 2.4) * sz);
+        c.closePath();
+        c.fill();
+      }
+    }
+    c.fillStyle = r.o ? '#7fdc8c' : '#ff6a5c';
+    c.beginPath(); c.arc(bx, by, Math.max(4, 7 * giK), 0, 6.2832); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = Math.max(1, 1.5 * giK); c.stroke();
+    if (r.n && tc && giTpx > 0) {
+      var fs = Math.max(9, 12 * giK) * giTpx;
+      tc.font = fs + 'px system-ui, sans-serif';
+      tc.textAlign = 'center'; tc.textBaseline = 'top';
+      var tw2 = tc.measureText(r.n).width;
+      var ly = by - Math.max(4, 7 * giK) - fs / giTpx - 3;
+      tc.fillStyle = 'rgba(8,12,20,.72)';
+      tc.fillRect(giPX(bx) - tw2 / 2 - 5 * giK * giTpx, giPY(ly - 2 * giK),
+        tw2 + 10 * giK * giTpx, fs + 6 * giK * giTpx);
+      tc.fillStyle = '#ebebeb';
+      tc.fillText(r.n, giPX(bx), giPY(ly));
+    }
+  });
+  if (!f || f.idle || f.err || !f.cities) return; // old giPaint hid plates when idle — same behavior
+  (giSt.cities || []).forEach(function (v) {
+    var lc = live[v.id];
+    if (!lc || !lc.fight) return;
+    var r = ((v.w || 0.06) * W) * 0.75;
+    var a = 0.35 + 0.3 * Math.sin(TK.clock() / 250);
+    c.strokeStyle = 'rgba(255,106,92,' + a.toFixed(3) + ')';
+    c.lineWidth = Math.max(2, 3 * giK);
+    c.beginPath(); c.arc(v.x * W, v.y * H, r, 0, 6.2832); c.stroke();
+  });
+  // place plates (client: green name, [owner] in union color) — screen space.
+  if (tc && giTpx > 0) {
+    var fs = Math.max(9, Math.round(22 * giK)) * giTpx;
+    tc.font = fs + 'px system-ui, sans-serif';
+    tc.textAlign = 'center'; tc.textBaseline = 'middle';
+    (giSt.cities || []).slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (v) {
+      if (!v.name) return;
+      var cx = v.x * giCo.width, cy = v.y * giCo.height + ((v.w || 0.06) * giCo.width) * 0.55 + fs / giTpx;
+      var x = giPX(cx), y = giPY(cy);
+      var lc = live[v.id];
+      tc.fillStyle = 'rgba(8,14,24,.6)';
+      var tw = Math.max(tc.measureText(v.name).width, lc && lc.owner ? tc.measureText('[' + lc.owner + ']').width : 0);
+      tc.fillRect(x - tw / 2 - 4, y - fs, tw + 8, lc && lc.owner ? fs * 2.4 : fs * 2);
+      tc.fillStyle = '#b8e6c8';
+      tc.fillText(v.name, x, y); // top row of the plate (owner line sits below)
+      if (lc && lc.owner) {
+        tc.fillStyle = lc.color || '#cfd8e8';
+        tc.fillText('[' + lc.owner + ']', x, y + fs * 0.9);
+      }
+    });
+  }
+}
+
+// ---- popup + orders -----------------------------------------------------------
+function giClosePop() { giPopFor = null; document.getElementById('gi-pop').style.display = 'none'; }
+function giOrder(act, arg, label, noun, confirmMsg) {
+  TK.order({ csrf: GI_CSRF, which: GI_WHICH, act: act, arg: arg, label: label, noun: noun, confirm: confirmMsg });
+}
+function giBtn(row, text, act, arg, cls, confirmMsg) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.textContent = text;
+  if (cls) b.className = cls;
+  b.addEventListener('click', function () {
+    giOrder(act, arg, text, 'mọi acc sự kiện', confirmMsg);
+  });
+  row.appendChild(b);
+}
+function giTap(e) {
+  var nrm = TK.normOf(e, giCam);
+  if (!nrm) { giClosePop(); return; }
+  var best = null, bd = Infinity;
+  (giSt.cities || []).forEach(function (v) {
+    var hw = (v.w || 0.06) / 2 + 0.015, hh = hw * giSt.worldW / giSt.worldH;
+    if (Math.abs(nrm.x - v.x) <= hw && Math.abs(nrm.y - v.y) <= hh) {
+      var d = Math.hypot(nrm.x - v.x, nrm.y - v.y);
+      if (d < bd) { best = v; bd = d; }
+    }
+  });
+  if (!best) { giClosePop(); return; }
+  giPopFor = best;
+  var pop = document.getElementById('gi-pop');
+  pop.innerHTML = '';
+  var live = giLiveMap()[best.id];
+  TK.popHead(pop, {
+    img: best.icon ? TK.artURL('gi', best.icon) : null,
+    name: best.name || ('Thành ' + best.id),
+    owner: live && live.owner, color: live && live.color,
+    fight: live && live.fight,
+    sub: live && live.owner ? '' : 'Chưa có chủ',
+  });
+  var ppl = document.createElement('div'); ppl.className = 'o';
+  pop.appendChild(ppl);
+  var row = document.createElement('div'); row.className = 'row';
+  giBtn(row, 'Hành quân tới', 'move', best.id);
+  giBtn(row, 'Tấn công thành', 'attack', best.id, 'danger');
+  giBtn(row, 'Đánh thủ vệ', 'attack_thuve', best.id);
+  giBtn(row, 'Ăn quả (+50)', 'canqua', '', 'item',
+    'Cho mọi acc sự kiện ăn 50 quả tăng lực (tiêu hao vật phẩm trong túi)?');
+  pop.appendChild(row);
+  giPopPeople(best);
+  pop.style.display = 'block';
+  TK.placePop(pop, giStage, giCam, best.x, best.y);
+  TK.haptic('light');
+}
+// Real city HP + standing roster from the last mapview answer (DOM built
+// with textContent — game names must never reach innerHTML).
+function giPopPeople(v) {
+  var pop = document.getElementById('gi-pop');
+  var el = pop.querySelector('div.o');
+  if (!el) return;
+  el.innerHTML = '';
+  var row = giView.cities[String(v.id)];
+  if (row) {
+    if (row.hp) {
+      var hpc = document.createElement('div');
+      hpc.textContent = (row.dead ? '💥 ' : '❤ ') + (row.cur || 0) + '/' + (row.hp || 0) +
+        (row.u && row.un ? ' · ' + row.un : '');
+      el.appendChild(hpc);
+    }
+    var hs = row.heads || [];
+    for (var i = 0; i < Math.min(hs.length, 8); i++) {
+      var d = document.createElement('div');
+      d.style.color = hs[i].o ? '#b8f2c8' : '#f2c2bd';
+      d.textContent = '🧍 ' + (hs[i].n || ('người ' + hs[i].p));
+      el.appendChild(d);
+    }
+    if (hs.length > 8) {
+      var m = document.createElement('div');
+      m.textContent = '… +' + (hs.length - 8) + ' người nữa';
+      el.appendChild(m);
+    }
+  }
+  el.style.display = el.childNodes.length ? 'block' : 'none';
+}
+
+giStage = document.getElementById('gi-stage');
+giCam = document.getElementById('gi-cam');
+giC1 = document.getElementById('gi-c1'); giCt = document.getElementById('gi-ct');
+giC2 = document.getElementById('gi-c2'); giCo = document.getElementById('gi-co');
+giTx = document.getElementById('gi-tx');
+giCamK = TK.cam(giStage, giCam, { max: 8, exclude: '.gi-pop,.gi-zoom,.gi-hud', change: function () {
+  giAnimDirty = true; // the text layer hangs off the camera
+  if (giPopFor) TK.placePop(document.getElementById('gi-pop'), giStage, giCam, giPopFor.x, giPopFor.y);
+  // A camera that STOPS is a request (kunlun idiom): refresh the standing
+  // roster 900ms after the gesture settles (giMapView's own 15s floor
+  // keeps a fidgety thumb from queueing island pulls).
+  clearTimeout(giCamTimer);
+  giCamTimer = setTimeout(function () { giMapView(false); }, 900);
+} });
+giCamK.onTap(giTap);
+document.getElementById('gi-zin').addEventListener('click', function (e) {
+  e.stopPropagation(); giCamK.zoomAt(giStage.clientWidth / 2, giStage.clientHeight / 2, 1.5);
+});
+document.getElementById('gi-zout').addEventListener('click', function (e) {
+  e.stopPropagation(); giCamK.zoomAt(giStage.clientWidth / 2, giStage.clientHeight / 2, 1 / 1.5);
+});
+document.getElementById('gi-fit').addEventListener('click', function (e) {
+  e.stopPropagation(); giCamK.reset();
+});
+document.getElementById('gi-boost').addEventListener('click', function (e) {
+  e.stopPropagation(); giOrder('tangtoc', '', 'Tăng tốc hành quân');
+});
+document.getElementById('gi-heal').addEventListener('click', function (e) {
+  e.stopPropagation(); giOrder('hoimau', '', 'Hồi máu', 'mọi acc sự kiện',
+    'Hồi máu từ nội lực (không dùng vật phẩm túi) cho mọi acc sự kiện?');
+});
+window.addEventListener('resize', function () { if (giSt) { giResize(); giBakeGround(); giBakeCities(); giPaint(); } });
+giBoot();
+</script>
+{{end}}

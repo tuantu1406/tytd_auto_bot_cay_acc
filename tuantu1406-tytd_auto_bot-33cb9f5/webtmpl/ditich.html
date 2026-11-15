@@ -1,0 +1,271 @@
+{{define "content"}}
+{{/* Thượng Cổ Di Tích mini app. Unlike the other boards this one has NO
+     client map art — the protocol defines rooms as a schematic slot ring —
+     so the page bakes that ring in canvas and spends its realtime budget on
+     the one thing the game has and Telegram never showed: the per-player
+     ROSTER the bot's resident event account sees inside its current room
+     (f.tc). Positions normalize through the client's own elliptic walk ring,
+     so dots sit where the client walks them. If the walk radius is unknown
+     the dots degrade to a roster LIST in the room popup — never fake dots. */}}
+<div class="dt-app">
+  <div class="dt-top">
+    <b>Thượng Cổ Di Tích</b>
+    <span id="dt-status" class="dt-status">đang tải bảng…</span>
+  </div>
+  <div class="dt-stage" id="dt-stage">
+    <div class="dt-cam" id="dt-cam">
+      <canvas id="dt-c1"></canvas>
+      <canvas id="dt-c2"></canvas>
+    </div>
+    <div class="dt-zoom">
+      <button type="button" id="dt-zin" title="Phóng to">+</button>
+      <button type="button" id="dt-zout" title="Thu nhỏ">−</button>
+      <button type="button" id="dt-fit" title="Vừa khung">⤢</button>
+    </div>
+    <div class="dt-hud">
+      <button type="button" id="dt-home">🏠 Về cứ điểm nhà</button>
+      <button type="button" id="dt-leave">🚪 Rời cứ điểm</button>
+    </div>
+    <div class="tk-pop dt-pop" id="dt-pop" style="display:none"></div>
+  </div>
+</div>
+
+<script src="/webstatic/appkit.js"></script>
+<style>
+.dt-app{position:fixed;inset:0;background:#0a0e18}
+.dt-top{position:absolute;top:calc(env(safe-area-inset-top) + 6px);left:8px;right:76px;z-index:6;
+  display:flex;align-items:center;gap:8px;padding:5px 10px;color:#ebebeb;font-size:14px;
+  background:rgba(10,14,24,.55);border:1px solid rgba(60,80,105,.4);border-radius:10px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
+.dt-status{margin-left:auto;font-size:11px;color:#8fa2b5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dt-stage{position:absolute;inset:0;overflow:hidden;touch-action:none}
+.dt-cam{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.dt-cam canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.dt-zoom{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 44px);display:flex;flex-direction:column;gap:6px;z-index:5}
+.dt-zoom button{width:36px;height:36px;border-radius:8px;border:0;background:#1b2433;color:#dfe8f2;font-size:18px;line-height:1}
+.dt-hud{position:absolute;left:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);display:flex;gap:6px;z-index:5}
+.dt-hud button{padding:8px 11px;border-radius:9px;border:0;background:#1b2433;color:#dfe8f2;font-size:12px}
+.dt-pop{position:absolute;z-index:9;min-width:200px;max-width:78%;background:rgba(13,19,30,.97);
+  border:1px solid #2c3a4e;border-radius:10px;padding:9px 11px;color:#dfe8f2;font-size:13px}
+.dt-pop b{display:block;margin-bottom:3px}
+.dt-pop .o{color:#9fb2c6;font-size:12px;margin-bottom:5px}
+.dt-pop .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.dt-pop button{padding:6px 10px;border-radius:8px;border:0;background:#27405e;color:#eaf2fb;font-size:12px}
+.dt-pop .roster{max-height:34vh;overflow:auto;margin-top:4px;border-top:1px solid #223047;padding-top:4px}
+.dt-pop .rl{display:flex;align-items:center;gap:6px;font-size:12px;padding:2px 0}
+.dt-pop .rl .cd{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.dt-pop .rl.dead{opacity:.55}
+</style>
+
+<script>
+var DT_CSRF = '{{.CSRF}}';
+var dtSt = null, dtFrame = null;
+var dtStage, dtCam, dtC1, dtC2, dtCamK;
+var dtPopFor = null;   // {idx, id}
+
+function dtBoot() {
+  TK.fetchJSON('/events/mapstatic?which=ditich')
+    .then(function (st) {
+      if (!st.tc || !st.tc.slots || !st.tc.slots.length) throw new Error('no tc');
+      dtSt = st;
+      dtResize();
+      dtBake();
+      TK.heartbeat('ditich');
+      requestAnimationFrame(dtLoop);
+    })
+    .catch(function () { tkStatus('không tải được nền bản đồ (binary cũ? khởi động lại bot)'); });
+}
+function tkStatus(t) { var el = document.getElementById('dt-status'); if (el) el.textContent = t; }
+
+function dtResize() {
+  TK.fitStage(dtStage, dtCam, dtSt.aspect);
+  dtCamK.clamp(); dtCamK.apply();
+}
+
+// Bake: the schematic slot ring (dark discs + numbers). Camp colors and
+// counts paint live on c2 — ownership changes minute to minute.
+function dtBake() {
+  var W = Math.max(1, dtCam.clientWidth), H = Math.max(1, dtCam.clientHeight);
+  TK.setSize(dtC1, W, H); TK.setSize(dtC2, W, H);
+  var c = dtC1.getContext('2d');
+  var g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#101828'); g.addColorStop(1, '#0a0e18');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  var r = dtSt.tc.slotR * W;
+  var fs = Math.max(12, Math.round(r * 0.62));
+  c.font = 'bold ' + fs + 'px system-ui, sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  dtSt.tc.slots.forEach(function (s, i) {
+    var x = s[0] * W, y = s[1] * H;
+    c.beginPath(); c.arc(x, y, r, 0, 6.2832);
+    c.fillStyle = 'rgba(20,29,45,.85)'; c.fill();
+    c.strokeStyle = 'rgba(90,115,145,.55)'; c.lineWidth = Math.max(1, W / 700); c.stroke();
+    c.fillStyle = '#5c7189';
+    c.fillText(String(i + 1), x, y);
+  });
+}
+
+// ---- live frames --------------------------------------------------------------
+TK.mapFrame('ditich', function (f) {
+  dtFrame = f;
+  TK.status(document.getElementById('dt-status'), f, 'trực tiếp · ');
+  if (dtPopFor) dtPopRender();
+});
+
+function dtLiveCity(idx) {
+  var f = dtFrame;
+  if (!f || f.idle || f.err || !f.cities) return null;
+  return f.cities[idx] || null;
+}
+
+// rAF paints slot rings/labels + the roster disc of the puller's room.
+function dtLoop() {
+  requestAnimationFrame(dtLoop);
+  if (document.hidden || !dtSt) return;
+  var W = dtC2.width, H = dtC2.height, f = dtFrame, c = dtC2.getContext('2d');
+  c.clearRect(0, 0, W, H);
+  if (!f || f.idle || f.err) { return; }
+  var r = dtSt.tc.slotR * W;
+  var tc = f.tc || null;
+  var fs = Math.max(10, Math.round(W / 150));
+  (f.cities || []).forEach(function (city, i) {
+    var s = dtSt.tc.slots[i]; if (!s) return;
+    var x = s[0] * W, y = s[1] * H;
+    if (city.color) {
+      c.beginPath(); c.arc(x, y, r, 0, 6.2832);
+      c.fillStyle = city.color + '33'; c.fill();
+      c.strokeStyle = city.color; c.lineWidth = Math.max(2, r * 0.10); c.stroke();
+    }
+    // occupancy count from Info ("P1:3  P2:1 …") + owner under the disc
+    c.font = fs + 'px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    if (city.owner) {
+      c.fillStyle = city.color || '#9fb2c6';
+      c.fillText(city.owner, x, y + r + fs);
+    }
+    if (city.info) {
+      c.fillStyle = '#8fa2b5';
+      c.fillText(city.info, x, y + r * 0.45 + fs * 0.4);
+    }
+  });
+  // The room the pulling event account stands in: paint every occupant.
+  if (tc && tc.place) {
+    var ti = -1;
+    (f.cities || []).forEach(function (city, i) { if (city.id === tc.place) ti = i; });
+    if (ti >= 0 && dtSt.tc.slots[ti]) {
+      var s2 = dtSt.tc.slots[ti], cx = s2[0] * W, cy = s2[1] * H, R2 = r * 0.85;
+      var mapped = tc.r > 0 && (tc.balls || []).every(function (b) { return b.x >= 0; });
+      c.beginPath(); c.arc(cx, cy, R2, 0, 6.2832);
+      c.strokeStyle = 'rgba(242,217,140,.5)'; c.lineWidth = Math.max(1, R2 * 0.03); c.stroke();
+      c.fillStyle = 'rgba(242,217,140,.7)';
+      c.font = Math.max(9, fs - 2) + 'px system-ui, sans-serif'; c.textAlign = 'center';
+      c.fillText((tc.balls || []).length + ' người', cx, cy - R2 - fs * 0.7);
+      if (mapped) {
+        (tc.balls || []).forEach(function (b) {
+          var bx = cx + (b.x - 0.5) * 2 * R2, by = cy + (b.y - 0.5) * 2 * R2;
+          var br = Math.max(3, R2 * 0.07);
+          c.beginPath(); c.arc(bx, by, br, 0, 6.2832);
+          if (b.d) {
+            c.strokeStyle = '#8493a5'; c.lineWidth = 2; c.stroke();
+          } else {
+            c.fillStyle = dtSt.tc.camps[String(b.c)] || '#dfe8f2'; c.fill();
+          }
+        });
+      }
+    }
+  }
+}
+
+// ---- popup ----------------------------------------------------------------------
+function dtClosePop() { dtPopFor = null; document.getElementById('dt-pop').style.display = 'none'; }
+function dtBtn(row, text, act, arg, confirmMsg) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.textContent = text;
+  b.addEventListener('click', function () {
+    TK.order({ csrf: DT_CSRF, which: 'ditich', act: act, arg: arg,
+      label: text, noun: 'mọi acc sự kiện', confirm: confirmMsg });
+  });
+  row.appendChild(b);
+}
+function dtPopRender() {
+  var pop = document.getElementById('dt-pop'), hit = dtPopFor;
+  pop.innerHTML = '';
+  var city = dtLiveCity(hit.idx);
+  TK.popHead(pop, {
+    name: 'Cứ điểm ' + (hit.idx + 1),
+    owner: city && city.owner, color: city && city.color,
+    fight: city && city.fight,
+    sub: (city && city.info) ? city.info : (city ? 'đang trống' : 'chưa có chủ'),
+  });
+
+  var f = dtFrame, tc = f && f.tc;
+  if (tc && city && tc.place === city.id) {
+    var lst = document.createElement('div'); lst.className = 'roster';
+    var now = TK.clock();
+    // camp → alive first, mirrors bgRosterFrame's sort with dead last
+    tc.balls.slice().sort(function (a, b) { return (a.d ? 1 : 0) - (b.d ? 1 : 0); })
+      .forEach(function (b) {
+        var line = document.createElement('div');
+        line.className = 'rl' + (b.d ? ' dead' : '');
+        var cd = document.createElement('span'); cd.className = 'cd';
+        cd.style.background = dtSt.tc.camps[String(b.c)] || '#8493a5';
+        line.appendChild(cd);
+        var txt = b.n + ' · Phe ' + b.c + (b.hp ? ' · HP ' + b.hp : '');
+        if (b.d) {
+          txt += b.rv ? ' · hồi ' + TK.mmss((b.rv - now) / 1000) : ' · đang chờ';
+        }
+        var sp = document.createElement('span'); sp.textContent = txt; line.appendChild(sp);
+        lst.appendChild(line);
+      });
+    pop.appendChild(lst);
+    if (tc.nm) { var o2 = document.createElement('div'); o2.className = 'o'; o2.textContent = tc.nm; pop.insertBefore(o2, pop.children[1]); }
+  }
+
+  var row = document.createElement('div'); row.className = 'row';
+  if (city) {
+    dtBtn(row, 'Vào', 'enter', city.id);
+    dtBtn(row, 'Đánh dấu', 'mark', city.id);
+  }
+  pop.appendChild(row);
+}
+function dtTap(e) {
+  var nrm = TK.normOf(e, dtCam);
+  if (!nrm) { dtClosePop(); return; }
+  var W = dtCam.clientWidth, H = dtCam.clientHeight;
+  var r = dtSt.tc.slotR;
+  var slots = dtSt.tc.slots.map(function (s, i) { return { x: s[0], y: s[1], idx: i }; });
+  var it = TK.nearestBox(nrm.x, nrm.y, slots, r * 1.15, r * 1.15 * (W / H), 0.09);
+  if (!it) { dtClosePop(); return; }
+  dtPopFor = it;
+  dtPopRender();
+  var pop = document.getElementById('dt-pop');
+  pop.style.display = 'block';
+  TK.placePop(pop, dtStage, dtCam, it.x, it.y);
+  TK.haptic('light');
+}
+
+dtStage = document.getElementById('dt-stage');
+dtCam = document.getElementById('dt-cam');
+dtC1 = document.getElementById('dt-c1'); dtC2 = document.getElementById('dt-c2');
+dtCamK = TK.cam(dtStage, dtCam, { max: 6, exclude: '.dt-pop,.dt-zoom,.dt-hud', change: function () { if (dtPopFor) TK.placePop(document.getElementById('dt-pop'), dtStage, dtCam, dtPopFor.x, dtPopFor.y); } });
+dtCamK.onTap(dtTap);
+document.getElementById('dt-zin').addEventListener('click', function (e) {
+  e.stopPropagation(); dtCamK.zoomAt(dtStage.clientWidth / 2, dtStage.clientHeight / 2, 1.5);
+});
+document.getElementById('dt-zout').addEventListener('click', function (e) {
+  e.stopPropagation(); dtCamK.zoomAt(dtStage.clientWidth / 2, dtStage.clientHeight / 2, 1 / 1.5);
+});
+document.getElementById('dt-fit').addEventListener('click', function (e) {
+  e.stopPropagation(); dtCamK.reset();
+});
+document.getElementById('dt-home').addEventListener('click', function (e) {
+  e.stopPropagation();
+  TK.order({ csrf: DT_CSRF, which: 'ditich', act: 'home', arg: '', label: 'Về cứ điểm nhà', noun: 'mọi acc sự kiện' });
+});
+document.getElementById('dt-leave').addEventListener('click', function (e) {
+  e.stopPropagation();
+  TK.order({ csrf: DT_CSRF, which: 'ditich', act: 'leave', arg: '', label: 'Rời cứ điểm', noun: 'mọi acc sự kiện' });
+});
+window.addEventListener('resize', function () { if (dtSt) { dtResize(); dtBake(); } });
+dtBoot();
+</script>
+{{end}}

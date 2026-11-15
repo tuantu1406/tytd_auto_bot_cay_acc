@@ -1,0 +1,1371 @@
+{{define "content"}}
+{{$c := .CSRF}}
+{{$open := .Data.Open}}
+{{/* One tab shows every event. An island section appears only while that
+    event is online for at least one of your logged-in event accounts — no
+    event running (or nobody logged in) means the section stays hidden.
+    Maps stream live over the shared /sse connection (the server picks a
+    random running member account per update); the page just draws. The acc
+    rows (đang treo pill + island status span) also re-paint in place from
+    the 5 s SSE state frame — no page reload needed to see statuses change. */}}
+
+{{if not (or .Data.OnlineNormal .Data.OnlinePeak .Data.OnlineHoly .Data.OnlineTc .Data.OnlineSky .Data.HolySoon)}}
+<div class="card">
+  <h1>Đảo sự kiện</h1>
+  <p class="small">Chưa có đảo sự kiện nào đang online — cần một acc đang treo của bạn (acc sự kiện hoặc acc thường) nhìn thấy server mở đảo; khi đó bản đồ lệnh trực tiếp sẽ hiện ra ở đây.</p>
+  <p class="small">Trang tự kiểm tra lại mỗi 60 giây — không cần tải thủ công.</p>
+  <script>setTimeout(function(){location.reload();},60000);</script>
+</div>
+{{end}}
+
+{{if .Data.OnlineNormal}}
+<div class="card">
+  <h1>Bồng Lai</h1>
+  {{/* The manual order form is GONE (owner 2026-10-18): the interactive map
+      below is the only order UI — tapping a city opens its popup with every
+      command (march / attack / thủ vệ), and the /bonglai mini app adds the
+      HUD buttons (tăng tốc / hồi máu / quả). One UI, no duplicate form. */}}
+  <div class="gi-map" data-which="bonglai">
+    <p class="small gm-status">đang chờ dữ liệu…</p>
+    <div class="gm-canvas">
+      <div class="gm-world">
+        <canvas class="gm-terrain" style="display:none"></canvas>
+        <img class="gm-bg" alt="" style="display:none">
+        <svg class="gm-links" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:none"></svg>
+        <canvas class="gm-fx" style="display:none"></canvas>
+        <div class="gm-cities"></div>
+      </div>
+      <div class="gi-pop"></div>
+    </div>
+  </div>
+  <p class="small gi-hint">Bản đồ cập nhật trực tiếp. Chạm vào thành để hành quân hoặc tấn công — lệnh gửi tới mọi acc sự kiện đang treo.</p>
+  <p class="small">Map lấy trực tiếp từ một acc đang treo bất kỳ của bang bạn.</p>
+</div>
+{{end}}
+
+{{if .Data.OnlinePeak}}
+<div class="card">
+  <h1>Thiên Ma</h1>
+  {{/* Same as Bồng Lai (owner 2026-10-18): no manual form — the interactive
+      map popup carries every command. */}}
+  <div class="gi-map" data-which="thienma">
+    <p class="small gm-status">đang chờ dữ liệu…</p>
+    <div class="gm-canvas">
+      <div class="gm-world">
+        <canvas class="gm-terrain" style="display:none"></canvas>
+        <img class="gm-bg" alt="" style="display:none">
+        <svg class="gm-links" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:none"></svg>
+        <canvas class="gm-fx" style="display:none"></canvas>
+        <div class="gm-cities"></div>
+      </div>
+      <div class="gi-pop"></div>
+    </div>
+  </div>
+  <p class="small gi-hint">Bản đồ cập nhật trực tiếp. Chạm vào thành để hành quân hoặc tấn công — lệnh gửi tới mọi acc sự kiện đang treo.</p>
+  <p class="small">Map lấy trực tiếp từ một acc đang treo bất kỳ của bang bạn.</p>
+</div>
+{{end}}
+
+{{if .Data.HolySoon}}
+<div class="card">
+  <h1>Cửu U Tranh Bá — sắp mở</h1>
+  <p class="small">Server đã chốt lịch chiến cho bang bạn: khai map <b>{{.Data.HolyStartICT}}</b> (giờ VN) — <b id="cuuu-cd" data-start="{{.Data.HolyStartMs}}">đang tính…</b>. Treo sẵn acc sự kiện đi — đúng giờ mở là map + lệnh đánh hiện ngay tại đây (đếm xong trang tự tải lại).</p>
+</div>
+{{end}}
+
+{{if .Data.OnlineHoly}}
+<div class="card">
+  <h1>Cửu U Tranh Bá</h1>
+  <p class="small">Lệnh gửi tới mọi acc sự kiện <b>đang treo</b> của bạn ở Cửu U Tranh Bá (bang chiến chiếm thành).</p>
+  <form method="post" action="/events/order" data-live="1">
+    <input type="hidden" name="csrf" value="{{$c}}">
+    <input type="hidden" name="which" value="cuuu">
+    <div class="grid">
+      <div>
+        <label>Hành động</label>
+        <select name="act" onchange="document.getElementById('argrow-hl').style.display=(this.value=='move'||this.value=='attack'||this.value=='attack_thuve'||this.value=='auto')?'':'none'">
+          <option value="move">Hành quân đến thành</option>
+          <option value="attack">Tấn công thành (cả người lẫn thủ vệ)</option>
+          <option value="attack_thuve">Đánh thủ vệ thành (NPC)</option>
+          <option value="auto">Treo máy tự đánh tại thành (0 = tắt)</option>
+          <option value="tangtoc">Tăng tốc hành quân</option>
+          <option value="hoisinh">Hồi sinh miễn phí</option>
+          <option value="hoisinh_item">Hồi sinh bằng vật phẩm</option>
+        </select>
+      </div>
+      <div id="argrow-hl">
+        <label>Thành (auto: nhập 0 = tắt treo máy)</label>
+        <input type="number" name="arg" min="0" placeholder="VD: 1005">
+      </div>
+    </div>
+    <p style="margin-top:12px"><button type="submit">Gửi lệnh</button></p>
+  </form>
+  <div class="gi-map" data-which="cuuu">
+    <p class="small gm-status">đang chờ dữ liệu…</p>
+    <div class="gm-canvas">
+      <div class="gm-world">
+        <canvas class="gm-terrain" style="display:none"></canvas>
+        <img class="gm-bg" alt="" style="display:none">
+        <svg class="gm-links" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:none"></svg>
+        <canvas class="gm-march" style="display:none"></canvas>
+        <canvas class="gm-fx" style="display:none"></canvas>
+        <div class="gm-cities"></div>
+      </div>
+      <div class="gi-pop"></div>
+    </div>
+  </div>
+  <p class="small gi-hint">Bản đồ cập nhật trực tiếp (đường nối = đường hành quân giữa các thành). Chạm vào thành để hành quân hoặc tấn công — lệnh gửi tới mọi acc sự kiện đang treo.</p>
+  <p class="small">Map lấy trực tiếp từ một acc đang treo bất kỳ của bang bạn. Bot tự hồi sinh miễn phí khi tới lượt; lệnh hồi sinh ở trên là quyền ưu tiên của bang chủ.</p>
+</div>
+{{end}}
+
+{{if .Data.OnlineTc}}
+<div class="card">
+  <h1>Thượng Cổ Di Tích</h1>
+  <p class="small">Lệnh gửi tới mọi acc sự kiện <b>đang treo</b> của bạn ở Thượng Cổ Di Tích (chiến theo phe, chiếm cứ điểm). Bang cần đăng ký acc trong game trước; vào phòng rồi acc tự đi và tự đánh quân địch gần nhất.</p>
+  <form method="post" action="/events/order" data-live="1">
+    <input type="hidden" name="csrf" value="{{$c}}">
+    <input type="hidden" name="which" value="ditich">
+    <div class="grid">
+      <div>
+        <label>Hành động</label>
+        <select name="act" onchange="document.getElementById('argrow-tc').style.display=(this.value=='enter'||this.value=='mark')?'':'none'">
+          <option value="enter">Vào cứ điểm</option>
+          <option value="home">Về cứ điểm nhà</option>
+          <option value="leave">Rời cứ điểm</option>
+          <option value="mark">Đánh dấu điểm tập kết (chỉ trưởng phe)</option>
+        </select>
+      </div>
+      <div id="argrow-tc" style="display:none">
+        <label>Cứ điểm (id)</label>
+        <input type="number" name="arg" min="1" placeholder="VD: 4001">
+      </div>
+    </div>
+    <p style="margin-top:12px"><button type="submit">Gửi lệnh</button></p>
+  </form>
+  <div class="gi-map" data-which="ditich">
+    <p class="small gm-status">đang chờ dữ liệu…</p>
+    <div class="gm-canvas gm-schematic">
+      <div class="gm-world">
+        <img class="gm-bg" alt="" style="display:none">
+        <svg class="gm-links" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:none"></svg>
+        <canvas class="gm-fx" style="display:none"></canvas>
+        <div class="gm-cities"></div>
+      </div>
+      <div class="gi-pop"></div>
+    </div>
+  </div>
+  <p class="small gi-hint">Bản đồ cập nhật trực tiếp (màu = phe đang giữ, số dưới ô = quân mỗi phe). Chạm vào cứ điểm để vào hoặc đánh dấu — lệnh gửi tới mọi acc sự kiện đang treo.</p>
+  <p class="small">Muốn xem ai đang ở cùng cứ điểm, dùng lệnh <code>/ditich_roster</code> trên Telegram (đánh tự động, không cần lệnh).</p>
+</div>
+{{end}}
+
+{{if .Data.OnlineSky}}
+<div class="card">
+  <h1>Tiên Vực Thương Đồ</h1>
+  <p class="small">Bản đồ giao thương trực tiếp: 15 cảng vòng ngoài nối nhau qua các điểm trung chuyển (chạm để xem chi tiết). <b>🚢</b> = thuyền đang chạy giữa hai cảng; cảng viền vàng ★ là nơi thuyền của bạn đang neo, kèm số thuyền và hàng hiếm đang mở.</p>
+  <div class="gi-map" data-which="thuongdo">
+    <p class="small gm-status">đang chờ dữ liệu…</p>
+    <div class="gm-canvas gm-schematic">
+      <div class="gm-world">
+        <img class="gm-bg" alt="" style="display:none">
+        <svg class="gm-links" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:none"></svg>
+        <canvas class="gm-fx" style="display:none"></canvas>
+        <div class="gm-cities"></div>
+      </div>
+      <div class="gi-pop"></div>
+    </div>
+  </div>
+  <p class="small gi-hint">Đường nối = tuyến bay thật trong game; điểm nhỏ giữa các tuyến là chỗ đổi hướng. Bot mỗi bang tự báo hàng hiếm của cảng hiện tại khi tới lượt — phần này chỉ để xem, không gửi lệnh.</p>
+</div>
+{{end}}
+
+{{if .Data.OnlineKu}}
+<div class="card">
+  <h1>Tranh Bá Côn Lôn</h1>
+  <p class="small">Bản đồ bang chiến 61×61: 37 thành trên đảo Côn Lôn — tên thành hiện dưới chân thành, ô có viền màu = vùng/lối đi đã chiếm (màu theo bang), chấm đỏ trên thành = đang giao tranh. Bấm vào BẤT KỲ ô nào trên sàn để mở bảng ô đó rồi hành quân/tấn công bằng acc sự kiện (giống trong game — máy chủ tự chặn ô không tới được); nút +/−/⤢ để zoom.</p>
+  <div class="gi-map" data-which="kunlun">
+    <p class="small gm-status">đang chờ dữ liệu…</p>
+    <div class="gm-canvas gm-schematic">
+      <div class="gm-world">
+        <canvas class="gm-terrain" style="display:none"></canvas>
+        <img class="gm-bg" alt="" style="display:none">
+        <svg class="gm-links" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:none"></svg>
+        <canvas class="gm-fx" style="display:none"></canvas>
+        <div class="gm-cities"></div>
+      </div>
+      <div class="gi-pop"></div>
+    </div>
+  </div>
+  <p class="small gi-hint">Map lấy từ một acc đang treo của bang bạn (một lượt hỏi trả lời toàn bộ bản đồ). Ô đất = đường/đồi vượt được, nền tối = không qua lại được.</p>
+</div>
+{{end}}
+
+{{if .Data.OnlineLh}}
+<div class="card">
+  <h1>Luân Hồi Bí Cảnh — bảng đấu</h1>
+  <p class="small">Sơ đồ 16 cứ điểm vòng chiến bang (vòng trong mùa, tự tươi mới ~25&nbsp;giây): vòng đỏ = đang giao tranh, nét đứt = trận vừa xảy ra; bấm vào cứ điểm để xem thủ thành + các cú đánh gần đây, ⚔️ tấn công là lệnh tay của chủ bang (bot không đánh thay). Kéo/zoom trong map; ⛶ góc trên-phải mở bàn chơi toàn màn hình (ngay trong app, không ra trình duyệt).</p>
+  <div style="position:relative">
+    <iframe src="/luanhoi" title="Luân Hồi Bí Cảnh" style="width:100%;height:560px;border:1px solid #333;border-radius:8px;background:#000"></iframe>
+    <div class="gm-zoom"><a class="gm-fs" href="/luanhoi" title="Mở bàn chơi toàn màn hình">⛶</a></div>
+  </div>
+</div>
+{{end}}
+
+{{if .Data.OnlineSwWar}}
+<div class="card">
+  <h1>Thương Minh Yêu Vực — chiến trường</h1>
+  <p class="small">Bản đồ khiêu chiến liên minh (tự tươi mới ~20&nbsp;giây): mỗi nhà là một bang đối thủ — vòng đỏ = đang có người giao tranh; bấm vào nhà để xem thủ thành + các cú đánh gần đây. ⚔️&nbsp;Tấn công bắn ngay không hỏi lại: <b>mọi acc sự kiện đang treo</b> cùng vào đánh cứ điểm đó, bot không check lượt (máy chủ tự chặn acc hết lượt), không dùng vật phẩm nào. Kéo/zoom trong map; ⛶ mở bàn chơi toàn màn hình.</p>
+  <div style="position:relative">
+    <iframe src="/seawarwar" title="Thương Minh Yêu Vực — chiến trường" style="width:100%;height:560px;border:1px solid #333;border-radius:8px;background:#071018"></iframe>
+    <div class="gm-zoom"><a class="gm-fs" href="/seawarwar" title="Mở bàn chơi toàn màn hình">⛶</a></div>
+  </div>
+</div>
+{{end}}
+
+{{if .Data.OnlineBm}}
+<div class="card">
+  <h1>Đỉnh Bắc Minh</h1>
+  <p class="small">Bản đồ bang chiến 119×119 (cùng máy engine Côn Lôn, giải riêng): 81 thành — bấm vào BẤT KỲ ô nào trên sàn để mở bảng ô đó rồi hành quân/tấn công bằng acc sự kiện; máy chủ tự chặn ô không tới được. Bấm ⚡tăng tốc trên map to: server trừ item tăng tốc nếu còn, hết mới trừ ngọc.</p>
+  <div class="gi-map" data-which="bacminh">
+    <p class="small gm-status">đang chờ dữ liệu…</p>
+    <div class="gm-canvas gm-schematic">
+      <div class="gm-world">
+        <canvas class="gm-terrain" style="display:none"></canvas>
+        <img class="gm-bg" alt="" style="display:none">
+        <svg class="gm-links" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:none"></svg>
+        <canvas class="gm-fx" style="display:none"></canvas>
+        <div class="gm-cities"></div>
+      </div>
+      <div class="gi-pop"></div>
+    </div>
+  </div>
+  <p class="small gi-hint">Map lấy từ một acc đang treo của bang bạn (một lượt hỏi trả lời toàn bộ bản đồ 14161 ô).</p>
+</div>
+{{end}}
+
+<div class="card">
+  <h1>Thêm acc sự kiện</h1>
+  <form method="post" action="/events">
+    <input type="hidden" name="csrf" value="{{$c}}">
+    <input type="hidden" name="action" value="add">
+    <div class="grid">
+      <div><label>Tên đăng nhập game</label><input type="text" name="username" autocomplete="off"></div>
+      <div><label>Mật khẩu game</label><input type="password" name="password" autocomplete="new-password"></div>
+      <div><label>Server ID</label><input type="number" name="server_id" min="1"></div>
+    </div>
+    <p style="margin-top:12px"><button type="submit">Thêm và đăng nhập</button></p>
+  </form>
+</div>
+
+{{if or $open.auto_luanhoi $open.auto_thuongminh}}
+<div class="card">
+  <h1>⚙️ Cấu hình hàng loạt — tất cả acc sự kiện</h1>
+  <p class="small">Acc sự kiện <b>mặc định BẬT</b> (login là chạy). Gạt tắt ở đây = mọi acc sự kiện của bạn nghỉ riêng sự kiện đó (giữ đăng nhập, loop tự nhường). Sự kiện chỉ hiện khi server đang mở.</p>
+  <form method="post" action="/events" data-live="1">
+    <input type="hidden" name="csrf" value="{{$c}}">
+    <input type="hidden" name="action" value="config_all">
+    {{if $open.auto_luanhoi}}
+    <label class="sw"><input type="hidden" name="shown_auto_luanhoi" value="1"><input type="checkbox" name="auto_luanhoi" checked><i></i><span>Tự chơi Luân Hồi Bí Cảnh — xe thư thương cả ngày khi vòng chiến mở, tự mua gói free/QC/tiên ngọc trong hạn, không tốn item, không đánh trận bang thay</span></label>
+    {{end}}
+    {{if $open.auto_thuongminh}}
+    <label class="sw"><input type="hidden" name="shown_auto_thuongminh" value="1"><input type="checkbox" name="auto_thuongminh" checked><i></i><span>Tự chơi Thương Minh Yêu Vực — chạy free, hỗ trợ đồng đội, rèn bảo thạch ưu tiên sát thương cuối, không bao giờ dùng vật phẩm thể lực, không đánh chiến bang thay</span></label>
+    {{end}}
+    <p style="margin-top:12px"><button type="submit">Áp cho tất cả acc sự kiện</button></p>
+  </form>
+</div>
+{{end}}
+
+{{if $open.auto_thuongminh}}
+<div class="card">
+  <h1>🌊 Thương Minh Yêu Vực</h1>
+  <p class="small">Bấm một cái: <b>mọi acc sự kiện đang treo</b> (kể cả acc được uỷ thác) sẽ cắn hết quả thể lực đang có — máy chủ tự dừng khi túi cạn, acc nào hết từ trước im lặng. Auto không bao giờ tự dùng quả; đây là nút duy nhất được phép.</p>
+  <form method="post" action="/events" data-live="1">
+    <input type="hidden" name="csrf" value="{{$c}}">
+    <input type="hidden" name="action" value="eat_all">
+    <button class="g" type="submit" data-nodisable>🍏 Cắn quả — tất cả acc</button>
+  </form>
+</div>
+{{end}}
+
+<div class="card">
+  <h1>Danh sách acc sự kiện</h1>
+  <div class="btns">
+    <form method="post" action="/events" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="login_all"><button>Đăng nhập tất cả</button></form>
+    <form method="post" action="/events" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="logout_all"><button class="danger">Đăng xuất tất cả</button></form>
+    {{if .Data.ShowAll}}
+    <a href="/events" class="small">— chỉ hiện acc đang treo</a>
+    {{else}}{{if gt .Data.Total .Data.Active}}
+    <a href="/events?all=1" class="small">— hiện cả {{sub .Data.Total .Data.Active}} acc đang nghỉ</a>
+    {{end}}{{end}}
+  </div>
+  {{if not .Data.Total}}<p class="small">Chưa có acc sự kiện nào.</p>{{end}}
+  {{if and .Data.Total (not .Data.Rows)}}<p class="small">Không có acc sự kiện nào đang treo — <a href="/events?all=1">hiện tất cả</a>.</p>{{end}}
+  {{with .Data.Rows}}
+  {{range .}}
+  <div class="lrow">
+    <div class="lmain">
+      <div class="lname">{{if .M.IngameName}}{{.M.IngameName}}{{else}}{{.M.Username}}{{end}}{{if .Deputy}} <span class="pill on" title="Acc này được chủ uỷ thác cho bạn CHẠY EVENT: force login/logout + gửi lệnh được, không thấy ở tab Đệ Tử, không xoá/đổi mật khẩu/cấu hình được.">🤝 uỷ thác</span>{{end}}</div>
+      {{/* The island segment (separator included) only exists while some
+          island is OPEN for this acc — eventIslandLine answers "" otherwise. */}}
+      <div class="lsub">{{.M.Username}} · <code>{{.M.ID}}</code> · sv {{.M.ServerID}}<span data-isl="{{.M.ID}}">{{if .Isl}} · {{.Isl}}{{end}}</span></div>
+      <div class="lacts">
+        <form method="post" action="/events" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="login"><input type="hidden" name="member_id" value="{{.M.ID}}">
+          <button class="mini" type="submit">Đăng nhập</button></form>
+        <form method="post" action="/events" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="logout"><input type="hidden" name="member_id" value="{{.M.ID}}">
+          <button class="sec mini" type="submit">Đăng xuất</button></form>
+        {{if not .Deputy}}
+        {{if or $open.auto_luanhoi $open.auto_thuongminh}}
+        <button class="sec mini" id="ecfb-{{.M.ID}}" type="button" aria-expanded="false" aria-controls="ecfg-{{.M.ID}}" onclick="evCfgToggle('{{.M.ID}}')">Cấu hình ▾</button>
+        {{end}}
+        <form method="post" action="/events"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="remove"><input type="hidden" name="member_id" value="{{.M.ID}}">
+          <button class="danger mini" type="submit" onclick="return confirm('Xoá acc sự kiện {{.M.ID}}?')">Xoá</button></form>
+        {{end}}
+      </div>
+      {{if not .Deputy}}{{if or $open.auto_luanhoi $open.auto_thuongminh}}
+      <form class="mcfg" id="ecfg-{{.M.ID}}" method="post" action="/events" data-live="1" hidden>
+        <input type="hidden" name="csrf" value="{{$c}}">
+        <input type="hidden" name="action" value="config">
+        <input type="hidden" name="member_id" value="{{.M.ID}}">
+        <h2>Auto sự kiện — acc này</h2>
+        {{if $open.auto_luanhoi}}
+        <label class="sw"><input type="hidden" name="shown_auto_luanhoi" value="1"><input type="checkbox" name="auto_luanhoi" {{if not .M.OffRebornTrial}}checked{{end}}><i></i><span>Tự chơi Luân Hồi Bí Cảnh — xe thư thương cả ngày khi vòng chiến mở, không tốn item, không đánh trận bang thay</span></label>
+        {{end}}
+        {{if $open.auto_thuongminh}}
+        <label class="sw"><input type="hidden" name="shown_auto_thuongminh" value="1"><input type="checkbox" name="auto_thuongminh" {{if not .M.OffSeaWar}}checked{{end}}><i></i><span>Tự chơi Thương Minh Yêu Vực — chạy free, hỗ trợ đồng đội, rèn bảo thạch ưu tiên sát thương cuối, không bao giờ dùng vật phẩm thể lực, không đánh chiến bang thay</span></label>
+        {{end}}
+        <div class="btns" style="margin-top:10px">
+          <button type="submit">Lưu</button>
+          <button class="sec mini" type="button" onclick="evCfgToggle('{{.M.ID}}')">Thu gọn</button>
+        </div>
+        <p class="small">Mặc định BẬT (login là chạy) — gạt tắt riêng acc này; bật lại có tác dụng trong ≤1 phút kể cả khi đang treo.</p>
+      </form>
+      {{end}}{{end}}
+    </div>
+    <span class="pill rpill {{if .Running}}on{{else}}off{{end}}" data-acc="{{.M.ID}}" data-on="ĐANG TREO" data-off="NGƯNG">{{if .Running}}ĐANG TREO{{else}}NGƯNG{{end}}</span>
+  </div>
+  {{end}}
+  {{end}}
+</div>
+
+<style>
+/* Live streamed map, H5-style: the server pushes the client's own world
+   geometry (normalized 0..1, per-building sizes included) and the browser
+   reproduces the game view — real-size sprites on the true world box,
+   game-camera interaction (fit + drag-pan + wheel/pinch zoom, double-tap
+   reset), the game's own burning-city frames from its battle atlas, and
+   nameplate chips like the client's. No CDN art (Thượng Cổ) → schematic
+   orbs, same camera. */
+.gi-map{margin-top:10px}
+.gm-canvas{position:relative;width:100%;aspect-ratio:var(--gm-ar,1);border-radius:10px;
+  overflow:hidden;background:linear-gradient(160deg,#13253e,#081223);border:1px solid rgba(212,175,55,.25);
+  touch-action:none;cursor:grab}
+.gm-canvas.gm-grabbing{cursor:grabbing}
+.gm-world{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
+.gm-terrain{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.gm-march{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.gm-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block}
+.gm-links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.gm-links line{stroke:rgba(242,217,140,.55);stroke-width:.35;vector-effect:non-scaling-stroke}
+.gm-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.gm-cities{position:absolute;inset:0}
+.gm-zoom{position:absolute;top:8px;right:8px;z-index:12;display:flex;flex-direction:column;gap:5px}
+.gm-zoom button{width:34px;height:34px;border-radius:8px;border:1px solid rgba(148,163,184,.35);background:rgba(13,17,24,.82);color:#dbe4f0;font-size:17px;line-height:1;cursor:pointer}
+.gm-zoom button:active{transform:scale(.93)}
+.gm-zoom a.gm-fs{display:flex;align-items:center;justify-content:center;width:34px;height:34px;
+  border-radius:8px;border:1px solid rgba(148,163,184,.35);background:rgba(26,38,60,.9);
+  color:#ffd76e;font-size:16px;text-decoration:none;line-height:1}
+.gm-zoom a.gm-fs:active{transform:scale(.93)}
+.gm-city{position:absolute;transform:translate(-50%,-50%);width:var(--gw,7.5%);padding:0;border:0;
+  background:none;cursor:pointer;line-height:1.2;-webkit-tap-highlight-color:transparent;
+  transition:left .9s linear,top .9s linear,width .9s linear}
+.gm-city img{display:block;width:100%;height:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+.gm-ring{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:112%;aspect-ratio:1/1;
+  border:2px solid var(--ring,transparent);border-radius:50%;display:none;pointer-events:none}
+.gm-city.ring .gm-ring{display:block}
+.gm-city.fight .gm-ring{border-color:#ff6a5c;animation:gmPulse 1s infinite alternate}
+@keyframes gmPulse{from{box-shadow:0 0 0 0 rgba(255,106,92,.55)}to{box-shadow:0 0 0 5px rgba(255,106,92,0)}}
+.gm-city.sel img{filter:drop-shadow(0 0 5px #f2d98c)}
+/* Nameplate rebuilt from the client's FairyGUI city label: dark chip,
+   green place name, owner in the union color underneath. */
+.gm-plate{position:absolute;top:94%;left:50%;transform:translateX(-50%);white-space:nowrap;
+  font-size:10px;line-height:1.3;padding:2px 8px;border-radius:4px;pointer-events:none;
+  background:rgba(4,12,20,.78);text-shadow:0 1px 2px #000;max-width:180px;
+  display:flex;flex-direction:column;align-items:center}
+.gm-plate .n{color:#d9ff98;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.gm-plate .o{color:#cfe3ef;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.gm-plate .o.gm-empty{color:#93a0b5;font-weight:400}
+.gm-lab{display:block;font-size:10px;color:#eef4fb;text-shadow:0 1px 2px #000;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+/* schematic orbs (no CDN art) */
+.gm-city.dot{width:8.5%}
+.gm-orb{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:1/1;
+  border-radius:50%;background:var(--ring,#6b7c8c);border:2px solid rgba(255,255,255,.85);
+  color:#05101d;font-weight:700;font-size:13px;box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.gm-city.dot.fight .gm-orb{box-shadow:0 0 0 3px rgba(255,106,92,.6)}
+/* route waypoints (Sky Trade): tiny plain dots so ports and ships stand out */
+.gm-city.dot.wp{width:3%}
+.gm-city.wp .gm-orb{background:#3d5a78;border-width:1px;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.gm-status{margin:0 0 6px;color:var(--dim,#93a0b5)}
+.gi-pop{position:absolute;display:none;z-index:6;transform:translate(-50%,12px);line-height:1.45;
+  background:rgba(10,15,23,.97);border:1px solid rgba(212,175,55,.45);border-radius:12px;
+  padding:10px 12px;min-width:180px;max-width:72%;box-shadow:0 10px 26px rgba(0,0,0,.6);
+  text-align:left;font:14px/1.45 var(--font-b)}
+.gi-pop b{display:block;color:var(--gold-hi,#f2d98c);margin-bottom:2px}
+.gi-pop .gi-owner{font-size:12px;color:var(--dim,#93a0b5);margin-bottom:8px}
+.gi-pop .gi-detail{margin-bottom:8px;max-height:150px;overflow-y:auto}
+.gi-pop .gi-atk{color:#ff8d84}
+.gi-pop .gi-def{color:#9fd2ff}
+.gi-pop button{display:block;width:100%;margin:5px 0}
+.gi-hint{margin-top:8px}
+</style>
+
+<script>
+// Live map pipeline: layout.html bridges SSE "map" frames into a window
+// 'tytd:map' event; this page draws them and keeps the server-side stream
+// subscription alive ONLY while it is open (8 s heartbeat, on=0 on hide or
+// pagehide — an unseen page never costs the game a single request).
+var GI_CSRF = '{{.CSRF}}';
+var GI_NAMES = { bonglai: 'Bồng Lai', thienma: 'Thiên Ma', cuuu: 'Cửu U Tranh Bá', ditich: 'Thượng Cổ', thuongdo: 'Thương Đồ', kunlun: 'Tranh Bá Côn Lôn', bacminh: 'Đỉnh Bắc Minh' };
+// Schematic marker text: the server may send its own label per city (Sky
+// Trade port numbers, ship glyphs; waypoints omit both lab and name →
+// drawn as a tiny plain dot). Maps without labels keep the id (Ball GVG).
+function giLabText(which, c) {
+  if (c.lab !== undefined) return c.lab;
+  return which === 'thuongdo' ? '' : String(c.id);
+}
+var GI_STREAM = {};
+var SVG_NS = 'http://www.w3.org/2000/svg';
+
+function giArt(b, p) { return '/events/mapart?b=' + encodeURIComponent(b) + '&p=' + encodeURIComponent(p); }
+function giCard(which) { return document.querySelector('.gi-map[data-which="' + which + '"]'); }
+// giStatusErr turns a silent static-layout fetch failure (old binary without
+// that map, proxy hiccup) into a visible card status instead of "chờ dữ liệu"
+// forever. Returns a handler so .catch keeps chaining.
+function giStatusErr(mapEl, msg) {
+  return function () {
+    var st = mapEl.querySelector('.gm-status');
+    if (st) st.textContent = msg;
+  };
+}
+
+// ------------------------------------------------------------ static scene --
+// One fetch per God Island card hands us the client's own layout: every
+// terrain tile, its city footprint (for the territory hexes) and the
+// localized place names. Sprites come from the client's terrain sheet, the
+// same atlas13 the Cocos client paints (rects decoded from its .bin):
+// item6..item16 for ground, z_hexagon2_5..16 for union territory.
+var GI_TERRAIN_R = { 6: [1414, 0, 200, 187], 7: [1212, 0, 200, 187], 8: [1247, 189, 200, 187], 9: [1045, 189, 200, 268], 10: [1616, 0, 200, 234], 11: [1010, 459, 200, 187], 12: [1247, 378, 200, 248], 13: [1449, 236, 200, 210], 14: [808, 537, 200, 187], 15: [1651, 236, 200, 237], 16: [0, 448, 200, 218] };
+var GI_HEX_R = { 5: [1616, 997, 200, 172], 6: [1616, 1171, 200, 172], 7: [1414, 1144, 200, 172], 8: [1414, 970, 200, 172], 9: [1414, 796, 200, 172], 10: [1010, 0, 200, 172], 11: [1651, 649, 200, 172], 12: [808, 363, 200, 172], 13: [808, 0, 200, 172], 14: [843, 174, 200, 172], 15: [0, 668, 200, 172], 16: [0, 842, 200, 172] };
+var GI_TERRAIN_C = { 5: '#122b45', 6: '#39795c', 8: '#255c4a', 9: '#2b6951', 10: '#347258', 11: '#8b6945', 12: '#9c7650', 13: '#aa8157', 14: '#aab9c3', 15: '#becbd2', 16: '#d2dce0' };
+
+var GI_STATIC = {}, GI_SHEETS = {};
+function giLoadStatic(which) {
+  if (!GI_STATIC[which]) {
+    GI_STATIC[which] = fetch('/events/mapstatic?which=' + encodeURIComponent(which), { credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) throw new Error('mapstatic ' + r.status); return r.json(); });
+    GI_STATIC[which].catch(function () { delete GI_STATIC[which]; });
+  }
+  return GI_STATIC[which];
+}
+function giLoadSheet(art, path) {
+  var key = art + '/' + path;
+  if (!GI_SHEETS[key]) {
+    GI_SHEETS[key] = new Promise(function (res, rej) {
+      var im = new Image();
+      im.onload = function () { res(im); };
+      im.onerror = function () { rej(new Error('sheet ' + path)); };
+      im.src = giArt(art, path);
+    });
+    GI_SHEETS[key].catch(function () { delete GI_SHEETS[key]; });
+  }
+  return GI_SHEETS[key];
+}
+
+function gmDiamond(ctx, x, y, w, h) {
+  ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x + w / 2, y);
+  ctx.lineTo(x, y + h / 2); ctx.lineTo(x - w / 2, y); ctx.closePath();
+}
+
+// Terrain + union territory under the buildings, redrawn per live frame
+// (territory colors change; ground itself never moves). Silent-fallback:
+// if the static scene or the sheet fails, the background jpg stays.
+// Kunlun has NO DOM markers: the board PNG paints castles, names and zone
+// colors, and every cell is reached through giKuCellAt — exactly like the
+// client, whose block panel (Move / AttackCity) opens on any tile and just
+// sends {targetPoint: getPosIndex(x,y), attackCity} for it. The inverse of
+// the client's own projection (mapOut: x=(tx−ty)·107+(col−1)·107,
+// y=(tx+ty)·63) turns a click on the world box back into a tile; void and
+// obstacle tiles (gid 0/3) are rejected client-side, the server still
+// answers 19944 for unreachable routes. getPosByCoordinate's y is the
+// diamond TOP vertex — board tints centre at anchor+hh — so the tap point
+// maps to the tile whose CENTRE is under the cursor: v = py/hh − 1.
+function giKuCellAt(canvas, e) {
+  var st = canvas._static;
+  if (!st || !st.ku || !canvas._giCam) return null;
+  var g = st.ku, s = canvas._giCam, r = canvas.getBoundingClientRect();
+  if (!r.width || !r.height) return null;
+  var nx = ((e.clientX - r.left) - s.tx) / s.s / r.width;
+  var ny = ((e.clientY - r.top) - s.ty) / s.s / r.height;
+  if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return null;
+  var u = (g.ox + nx * st.worldW - (g.col - 1) * g.hw) / g.hw; // tx − ty
+  var v = (g.oy + ny * st.worldH) / g.hh - 1;                  // tx + ty (centre, see above)
+  var tx = Math.round((u + v) / 2), ty = Math.round((v - u) / 2);
+  if (tx < 0 || ty < 0 || tx >= g.col || ty >= g.row) return null;
+  var gid = g.grid.charCodeAt(ty * g.col + tx) - 48;
+  if (gid !== 1 && gid !== 2 && gid !== 4) return null;
+  return { tx: tx, ty: ty, pos: ty * g.col + tx, x: nx, y: ny };
+}
+
+// gmKuBoard shows the Côn Lôn map card. SERVER-RAM POLICY (2026-10-06): no
+// server-side render on a page view — the card is the immutable embedded map
+// background (/events/mapart?b=ku&p=bg.jpg, same bytes the /kunlun mini app
+// preloads, year-cached), and the full live board with union tints lives in
+// the browser-baked mini app ("Mở Côn Lôn trực tiếp"), never in a VPS PNG.
+// _sceneReady stays false so giOnMapFrame keeps the background visible.
+function gmKuBoard(canvas, art) {
+  var cv = canvas.querySelector('.gm-terrain');
+  if (cv) cv.style.display = 'none';
+  canvas._sceneReady = false;
+  var bg = canvas.querySelector('.gm-bg');
+  if (!bg) return;
+  var u = giArt(art || 'ku', 'bg.jpg');
+  if (bg.getAttribute('src') !== u) {
+    bg.onload = function () {
+      if (bg.naturalWidth) canvas.style.setProperty('--gm-ar', String(bg.naturalWidth / bg.naturalHeight));
+    };
+    bg.src = u;
+  }
+  bg.style.display = '';
+}
+
+function giDrawScene(canvas) {
+  var st = canvas._static, img = canvas._sceneImg;
+  if (st && st.art === 'hl') { gmHLGrid(canvas); return; } // Holy Land: real bg grid, no tiles
+  if (st && (st.art === 'ku' || st.art === 'bm')) { gmKuBoard(canvas, st.art); return; } // Kunlun engine (Côn Lôn / Đỉnh Bắc Minh): sprite board as background PNG
+  var cv = canvas.querySelector('.gm-terrain');
+  if (!cv || !st || !img || !st.tiles || !st.tiles.length) return;
+  // The layer starts hidden — clientWidth is 0 while display:none, so it must
+  // be shown before measuring (and re-hidden if the draw can't run).
+  var wasHidden = cv.style.display === 'none';
+  if (wasHidden) cv.style.display = 'block';
+  var W = cv.clientWidth, H = cv.clientHeight;
+  if (!W || !H) { if (wasHidden) cv.style.display = 'none'; return; }
+  var d = Math.min(2, window.devicePixelRatio || 1);
+  var pw = Math.round(W * d), ph = Math.round(H * d);
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  ctx.fillStyle = GI_TERRAIN_C[5]; ctx.fillRect(0, 0, W, H); // water
+  var k = W / st.worldW, th = st.tileH * k, i, t, r, x, y, w, h;
+  var fr = GI_STREAM[st.which], slot = {};
+  if (fr && fr.cities) fr.cities.forEach(function (c) { if (c.owner) slot[c.id] = c.ci; });
+  for (i = 0; i < st.tiles.length; i++) {
+    t = st.tiles[i];
+    if (t.g === 5) continue; // the client leaves water tiles unpainted
+    x = t.x * W; y = t.y * H;
+    r = GI_TERRAIN_R[t.g];
+    if (!r) { gmDiamond(ctx, x, y, st.tileW * k, th); ctx.fillStyle = GI_TERRAIN_C[t.g] || '#244855'; ctx.fill(); continue; }
+    w = r[2] * k; h = r[3] * k;
+    ctx.drawImage(img, r[0], r[1], r[2], r[3], x - w / 2, y + th / 2 - h, w, h);
+  }
+  for (i = 0; i < st.tiles.length; i++) {
+    t = st.tiles[i];
+    if (!t.c || !(t.c in slot)) continue;
+    var ci = slot[t.c];
+    if (ci == null) continue;
+    r = GI_HEX_R[5 + (Math.abs(ci) % 12)];
+    if (!r) continue;
+    x = t.x * W; y = t.y * H; w = r[2] * k; h = r[3] * k;
+    ctx.globalAlpha = t.k ? 0.95 : 0.8;
+    ctx.drawImage(img, r[0], r[1], r[2], r[3], x - w / 2, y - h / 2, w, h);
+  }
+  ctx.globalAlpha = 1;
+  cv.style.display = 'block';
+  canvas._sceneReady = true;
+  var bg = canvas.querySelector('.gm-bg');
+  if (bg) bg.style.display = 'none';
+}
+
+// Holy Land's main scene is the client's 5×2 grid of 750×1800 background
+// islands, mapped straight onto the exact world box the server normalizes on
+// (worldW/worldH). Same terrain canvas as God Island; the single bg jpg is
+// replaced once the tiles are in.
+var GI_HL_IMGS = null;
+function gmHLGrid(canvas) {
+  var st = canvas._static;
+  var cv = canvas.querySelector('.gm-terrain');
+  if (!cv || !st || !st.worldW || !GI_HL_IMGS) return;
+  // clientWidth is 0 while display:none — show first, measure after.
+  var wasHidden = cv.style.display === 'none';
+  if (wasHidden) cv.style.display = 'block';
+  var W = cv.clientWidth, H = cv.clientHeight;
+  if (!W || !H) { if (wasHidden) cv.style.display = 'none'; return; }
+  var d = Math.min(2, window.devicePixelRatio || 1);
+  var pw = Math.round(W * d), ph = Math.round(H * d);
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  ctx.fillStyle = '#081223'; ctx.fillRect(0, 0, W, H);
+  var cols = 5, tw = 750, th = 1800, drew = 0;
+  for (var i = 0; i < GI_HL_IMGS.length; i++) {
+    var im = GI_HL_IMGS[i];
+    if (!im || !im.naturalWidth) continue;
+    drew++;
+    var o = i % cols, n = (i / cols) | 0;
+    ctx.drawImage(im, o * tw / st.worldW * W, n * th / st.worldH * H, tw / st.worldW * W, th / st.worldH * H);
+  }
+  if (!drew) {
+    // Every tile failed (proxy/CDN trouble) — keep the single bg jpg fallback
+    // visible instead of painting a black rectangle over it.
+    if (wasHidden) cv.style.display = 'none';
+    return;
+  }
+  cv.style.display = 'block';
+  canvas._sceneReady = true;
+  var bg = canvas.querySelector('.gm-bg');
+  if (bg) bg.style.display = 'none';
+}
+function gmHLLoad(cb) {
+  if (GI_HL_IMGS) { cb(); return; }
+  var imgs = new Array(10), left = 10;
+  for (var i = 0; i < 10; i++) {
+    (function (k) {
+      var im = new Image();
+      im.onload = im.onerror = function () {
+        imgs[k] = im;
+        if (--left === 0) { GI_HL_IMGS = imgs; cb(); }
+      };
+      im.src = giArt('hl', 'images/bgItem/sdzf_bg' + (k + 1) + '.jpg');
+    })(i);
+  }
+}
+
+// Cửu U marches: each SSE frame carries the bracket's full route snapshot
+// (from/to city + depart/arrive ms). Dots interpolate along From→To in a rAF
+// loop — just like watching armies walk the map in-game. Clock skew between
+// the browser and the game server is calibrated out with the frame stamp.
+function gmMarchDraw(canvas) {
+  var cv = canvas.querySelector('.gm-march');
+  if (!cv) return false;
+  var m = canvas._march;
+  if (!m) { cv.style.display = 'none'; return false; }
+  // Hidden canvases measure 0×0 — show before measuring, hide again if size
+  // is genuinely missing (page itself hidden).
+  cv.style.display = 'block';
+  var W = cv.clientWidth, H = cv.clientHeight;
+  if (!W || !H) { cv.style.display = 'none'; return true; }
+  var d = Math.min(2, window.devicePixelRatio || 1);
+  var pw = Math.round(W * d), ph = Math.round(H * d);
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  var now = Date.now() + (m.off || 0), live = 0;
+  for (var i = 0; i < m.rs.length; i++) {
+    var r = m.rs[i], a = m.pos[r.from], b = m.pos[r.to];
+    if (!a || !b) continue;
+    var dur = r.arrive - r.start;
+    var p = dur > 0 ? (now - r.start) / dur : 1;
+    if (p < 0) p = 0;
+    if (p >= 1) continue; // already arrived — the city popup is the truth now
+    live++;
+    var x = (a.x + (b.x - a.x) * p) * W, y = (a.y + (b.y - a.y) * p) * H;
+    ctx.globalAlpha = .3;
+    ctx.strokeStyle = r.color || '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(a.x * W, a.y * H); ctx.lineTo(x, y); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = r.color || '#fff';
+    ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  cv.style.display = live ? 'block' : 'none';
+  return live > 0;
+}
+function gmMarchSync(canvas, f) {
+  var cv = canvas.querySelector('.gm-march');
+  if (!cv) return;
+  var has = f && f.routes && f.routes.length && f.cities;
+  canvas._march = null;
+  if (has) {
+    var pos = {};
+    f.cities.forEach(function (c) { pos[c.id] = c; });
+    // routes.ts/server clock vs this browser: one frame stamp calibrates all
+    canvas._march = { rs: f.routes, pos: pos, off: (f.ts || 0) * 1000 - Date.now() };
+  }
+  if (canvas._marchRaf) { cancelAnimationFrame(canvas._marchRaf); canvas._marchRaf = 0; }
+  if (canvas._march) {
+    var loop = function () {
+      canvas._marchRaf = 0;
+      if (!canvas._march || document.hidden) return;
+      gmMarchDraw(canvas);
+      canvas._marchRaf = requestAnimationFrame(loop);
+    };
+    canvas._marchRaf = requestAnimationFrame(loop);
+  }
+  gmMarchDraw(canvas);
+}
+
+// Cities are diffed by id (not rebuilt) so CSS transitions glide buildings
+// to their new spots/sizes between frames, exactly like the game's tweening.
+function giOnMapFrame(f) {
+  if (!f || !f.which) return;
+  var el = giCard(f.which);
+  if (!el) return; // card hidden (event offline) — nothing to draw into
+  GI_STREAM[f.which] = f;
+  var status = el.querySelector('.gm-status');
+  var canvas = el.querySelector('.gm-canvas');
+  var world = el.querySelector('.gm-world');
+  if (f.idle) { status.textContent = 'sự kiện chưa mở — map sẽ tự hiện khi mở'; gmMarchSync(canvas, null); return; }
+  if (f.err) { status.textContent = f.err; gmMarchSync(canvas, null); return; }
+  if (!f.cities || !f.cities.length) return;
+  status.textContent = 'Trực tiếp · ' + new Date((f.ts || 0) * 1000).toLocaleTimeString();
+  canvas.style.setProperty('--gm-ar', String(f.aspect || 1));
+
+  var bg = world.querySelector('.gm-bg');
+  if (f.art && f.bg) {
+    var u = giArt(f.art, f.bg);
+    if (bg.getAttribute('src') !== u) { bg.src = u; }
+    // The terrain layer (real client tiles) supersedes the background jpg.
+    bg.style.display = canvas._sceneReady ? 'none' : '';
+  } else {
+    bg.style.display = 'none';
+  }
+
+  var pos = {};
+  f.cities.forEach(function (c) { pos[c.id] = c; });
+  var svg = world.querySelector('.gm-links');
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  if (f.links && f.links.length) {
+    svg.style.display = '';
+    var hl = f.which === 'cuuu';
+    f.links.forEach(function (l) {
+      var a = pos[l[0]], b = pos[l[1]];
+      if (!a || !b) return;
+      if (hl) {
+        // Client rule: the road ribbon only exists when both cities share
+        // one union — unowned/mixed segments stay hidden (stone bridges are
+        // painted into the background already).
+        if (!a.owner || a.owner !== b.owner || !a.color || a.color !== b.color) return;
+      }
+      var ln = document.createElementNS(SVG_NS, 'line');
+      ln.setAttribute('x1', (a.x * 100).toFixed(2)); ln.setAttribute('y1', (a.y * 100).toFixed(2));
+      ln.setAttribute('x2', (b.x * 100).toFixed(2)); ln.setAttribute('y2', (b.y * 100).toFixed(2));
+      if (hl) {
+        ln.setAttribute('stroke', a.color);
+        ln.setAttribute('stroke-width', '4');
+        ln.setAttribute('opacity', '.5');
+        ln.setAttribute('stroke-linecap', 'round');
+      }
+      svg.appendChild(ln);
+    });
+  } else {
+    svg.style.display = 'none';
+  }
+
+  var wrap = world.querySelector('.gm-cities');
+  var byId = wrap._byId || (wrap._byId = {});
+  var seen = {};
+  // Kunlun-engine boards draw no DOM markers: the board PNG is the art and
+  // every cell opens its pop through the camera hit-test (giKuCellAt).
+  var kuNoDom = f.which === 'kunlun' || f.which === 'bacminh';
+  f.cities.forEach(function (c) {
+    seen[c.id] = true;
+    if (kuNoDom) return;
+    var b = byId[c.id];
+    if (!b) {
+      b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('data-id', String(c.id));
+      if (c.icon) {
+        b._ring = document.createElement('span'); b._ring.className = 'gm-ring'; b.appendChild(b._ring);
+        b._img = document.createElement('img'); b._img.alt = ''; b._img.loading = 'lazy'; b.appendChild(b._img);
+        b._plate = document.createElement('span'); b._plate.className = 'gm-plate';
+        b._plateN = document.createElement('span'); b._plateN.className = 'n';
+        b._plateO = document.createElement('span'); b._plateO.className = 'o';
+        b._plate.appendChild(b._plateN); b._plate.appendChild(b._plateO); b.appendChild(b._plate);
+      } else {
+        b._orb = document.createElement('span'); b._orb.className = 'gm-orb';
+        b._orb.textContent = giLabText(f.which, c);
+        b.appendChild(b._orb);
+        b._lab = document.createElement('span'); b._lab.className = 'gm-lab'; b.appendChild(b._lab);
+      }
+      byId[c.id] = b;
+      wrap.appendChild(b);
+    }
+    // Empty label means a tiny waypoint dot (Kunlun never gets here).
+    b.className = 'gm-city' + (c.icon ? ' ringable' : ' dot') + (c.fight ? ' fight' : '') + (c.color ? ' ring' : '') + (giLabText(f.which, c) === '' ? ' wp' : '');
+    if (b._orb) b._orb.textContent = giLabText(f.which, c);
+    b.style.left = (c.x * 100).toFixed(3) + '%';
+    b.style.top = (c.y * 100).toFixed(3) + '%';
+    // True client sprite size over the same world box; z by depth so the
+    // bottom half overlaps the top half like the game draws it.
+    b.style.width = c.w ? (c.w * 100).toFixed(3) + '%' : '';
+    b.style.zIndex = String(Math.round(c.y * 1000));
+    if (c.color) b.style.setProperty('--ring', c.color);
+    var ttl;
+    if (f.which === 'thuongdo') ttl = c.name || (c.info ? 'Thuyền: ' + c.info : 'Điểm trung chuyển');
+    else ttl = c.name || ((f.which === 'ditich' ? 'Cứ điểm ' : 'Thành ') + c.id);
+    b.title = ttl + ' — ' + (c.owner || (f.which === 'thuongdo' ? (c.info || 'tuyến trung chuyển') : 'chưa có chủ'));
+    if (b._img) {
+      var u2 = giArt(f.art, c.icon);
+      if (b._img.getAttribute('src') !== u2) b._img.src = u2;
+      // Client plate: green place name, [owner] in the union color below.
+      // GI labels every stronghold ("trống" when empty); Cửu U only owned.
+      var nm = c.name || '';
+      b._plateN.textContent = nm;
+      b._plateN.style.display = nm ? '' : 'none';
+      var own = c.owner || '';
+      // GI labels every stronghold ("trống" when empty); Cửu U and the
+      // public Thương Đồ ports only ever show a real owner.
+      var showOwn = f.which === 'thuongdo' ? !!own : (f.which !== 'cuuu' || own);
+      b._plateO.style.display = showOwn ? '' : 'none';
+      if (showOwn) {
+        b._plateO.textContent = own ? ('[' + own + ']') : 'trống';
+        b._plateO.className = 'o' + (own ? '' : ' gm-empty');
+        b._plateO.style.color = own && c.color ? c.color : '';
+      }
+      b._plate.style.display = (nm || showOwn) ? '' : 'none';
+    } else if (b._lab) {
+      b._lab.textContent = c.owner ||
+        ((f.which === 'ditich' || f.which === 'thuongdo') && c.lab !== '🚢' ? (c.info || '') : '');
+    }
+  });
+  Object.keys(byId).forEach(function (id) {
+    if (!seen[id]) { byId[id].parentNode.removeChild(byId[id]); delete byId[id]; }
+  });
+
+  giFxSync(canvas, f);
+  if (f.which === 'cuuu') gmMarchSync(canvas, f); // marching armies
+  if (canvas._static) giDrawScene(canvas); // territory colors follow the frame
+}
+
+// ---------------------------------------------------------------- camera --
+// Game-camera over the whole map: fit at 1×, drag to pan, wheel/pinch zoom
+// toward the cursor (max 5×), double-tap/dblclick re-fits. The world layer
+// carries one translate+scale transform; everything inside stays in the
+// normalized geometry the server sent.
+function giApplyCam(canvas) {
+  var s = canvas._giCam;
+  canvas.querySelector('.gm-world').style.transform =
+    'translate(' + s.tx.toFixed(1) + 'px,' + s.ty.toFixed(1) + 'px) scale(' + s.s.toFixed(3) + ')';
+  if (canvas._giPopCity) giPopPos(canvas, canvas._giPopCity);
+}
+function giClampCam(canvas) {
+  var s = canvas._giCam, W = canvas.clientWidth, H = canvas.clientHeight;
+  s.s = Math.min(5, Math.max(1, s.s));
+  s.tx = Math.min(0, Math.max(W * (1 - s.s), s.tx));
+  s.ty = Math.min(0, Math.max(H * (1 - s.s), s.ty));
+}
+function giZoomAt(canvas, px, py, factor) {
+  var s = canvas._giCam;
+  var ns = Math.min(5, Math.max(1, s.s * factor));
+  var k = ns / s.s;
+  s.tx = px - (px - s.tx) * k;
+  s.ty = py - (py - s.ty) * k;
+  s.s = ns;
+  giClampCam(canvas);
+  giApplyCam(canvas);
+}
+function giResetCam(canvas) {
+  var s = canvas._giCam;
+  s.s = 1; s.tx = 0; s.ty = 0;
+  giApplyCam(canvas);
+}
+function giAttachCam(canvas) {
+  var s = canvas._giCam = { s: 1, tx: 0, ty: 0, lastTap: 0 };
+  var pts = {}, moved = 0, t0 = 0, pinchD = 0;
+  var count = function () { return Object.keys(pts).length; };
+  canvas.addEventListener('pointerdown', function (e) {
+    if (e.target.closest('.gi-pop')) return;
+    if (!count()) { moved = 0; t0 = Date.now(); canvas._giDragged = false; canvas.classList.add('gm-grabbing'); }
+    pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) { }
+    if (count() === 2) {
+      var p = Object.keys(pts).map(function (k) { return pts[k]; });
+      pinchD = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+      moved = 99; canvas._giDragged = true;
+    }
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    if (!pts[e.pointerId]) return;
+    var p = pts[e.pointerId], dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    if (count() >= 2) {
+      var k = Object.keys(pts), a = pts[k[0]], b = pts[k[1]];
+      var d = Math.hypot(a.x - b.x, a.y - b.y);
+      var r = canvas.getBoundingClientRect();
+      if (pinchD > 0 && d > 0) giZoomAt(canvas, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top, d / pinchD);
+      pinchD = d;
+      moved = 99; canvas._giDragged = true;
+    } else {
+      moved += Math.abs(dx) + Math.abs(dy);
+      if (moved > 8) canvas._giDragged = true;
+      s.tx += dx; s.ty += dy;
+      giClampCam(canvas);
+      giApplyCam(canvas);
+    }
+  });
+  var up = function (e) {
+    if (!pts[e.pointerId]) return;
+    delete pts[e.pointerId];
+    pinchD = 0;
+    if (!count()) {
+      canvas.classList.remove('gm-grabbing');
+      // double-tap re-fits (mobile has no dblclick reliably)
+      if (!canvas._giDragged && Date.now() - t0 < 300) {
+        if (Date.now() - s.lastTap < 300) { giResetCam(canvas); s.lastTap = 0; }
+        else s.lastTap = Date.now();
+      }
+    }
+  };
+  canvas.addEventListener('pointerup', up);
+  canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var r = canvas.getBoundingClientRect();
+    giZoomAt(canvas, e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.002));
+    canvas._giDragged = true;
+  }, { passive: false });
+  canvas.addEventListener('dblclick', function (e) {
+    if (!e.target.closest('.gi-pop')) giResetCam(canvas);
+  });
+  window.addEventListener('resize', function () {
+    giClampCam(canvas); giApplyCam(canvas);
+    if (canvas._static) giDrawScene(canvas); // canvas px size changed
+  });
+}
+
+// ------------------------------------------------------------ atlas FX --
+// The game's own burning-city animation, salvaged from its standard texture
+// atlas (spine/battle/skeleton.atlas + .png shipped by both art bundles):
+// 28 hand-drawn fire frames (1yw_00..27) stepped on a canvas over every
+// fighting city. No skeleton runtime, no extra game traffic — the atlas and
+// sheet come through the same allow-listed art proxy, cached forever.
+var GI_FX_SHEETS = {};
+
+function giParseAtlas(txt) {
+  var lines = txt.split(/\r?\n/), regs = {}, i = 1; // line 0 = sheet filename
+  while (i < lines.length) {
+    var L = lines[i];
+    if (!L.trim() || L.charAt(0) === ' ' || L.indexOf(':') >= 0) { i++; continue; } // header key:value
+    var name = L.trim(), x = 0, y = 0, w = 0, h = 0, rot = false, j = i + 1;
+    while (j < lines.length && lines[j].charAt(0) === ' ') {
+      var m = lines[j].trim().match(/^(\w+):\s*(.+)$/);
+      if (m) {
+        var v = m[2].split(',');
+        if (m[1] === 'xy') { x = +v[0]; y = +v[1]; }
+        else if (m[1] === 'size') { w = +v[0]; h = +v[1]; }
+        else if (m[1] === 'rotate') rot = m[2].trim() === 'true';
+      }
+      j++;
+    }
+    regs[name] = { x: x, y: y, w: w, h: h, rot: rot };
+    i = j;
+  }
+  return regs;
+}
+
+function giLoadFxSheet(art) {
+  if (!GI_FX_SHEETS[art]) {
+    GI_FX_SHEETS[art] = fetch(giArt(art, 'spine/battle/skeleton.atlas'))
+      .then(function (r) { if (!r.ok) throw new Error('atlas ' + r.status); return r.text(); })
+      .then(function (txt) {
+        var regs = giParseAtlas(txt);
+        return new Promise(function (res, rej) {
+          var im = new Image();
+          im.onload = function () { res({ regs: regs, im: im }); };
+          im.onerror = function () { rej(new Error('sheet load')); };
+          im.src = giArt(art, 'spine/battle/skeleton.png');
+        });
+      });
+    GI_FX_SHEETS[art].catch(function () { delete GI_FX_SHEETS[art]; }); // retry next fight
+  }
+  return GI_FX_SHEETS[art];
+}
+
+function giFxSync(canvas, f) {
+  var fights = f.cities.filter(function (c) { return c.fight && c.w; });
+  var st = canvas._giFx || (canvas._giFx = { raf: 0, cities: [], art: null, sheet: null });
+  st.cities = fights;
+  st.art = f.art;
+  var cv = canvas.querySelector('.gm-fx');
+  if (!cv || !cv.getContext) return; // CSS pulse remains the fight cue
+  if (!fights.length || !f.art) {
+    if (st.raf) { cancelAnimationFrame(st.raf); st.raf = 0; }
+    var c0 = cv.getContext('2d');
+    c0.setTransform(1, 0, 0, 1, 0, 0);
+    c0.clearRect(0, 0, cv.width, cv.height);
+    cv.style.display = 'none';
+    return;
+  }
+  if (st.raf) return;
+  giLoadFxSheet(f.art).then(function (sheet) {
+    if (st.raf || !st.cities.length || st.art !== f.art) return;
+    st.sheet = sheet;
+    st.frame = 0; st.last = 0;
+    st.raf = requestAnimationFrame(function step(t) {
+      st.raf = requestAnimationFrame(step);
+      if (t - st.last < 55) return; // ~18 fps, the game's own cadence
+      st.last = t;
+      st.frame = (st.frame + 1) % 28;
+      giFxDraw(canvas, st);
+    });
+  }).catch(function () { /* atlas missing → CSS pulse fallback, silently */ });
+}
+
+function giFxDraw(canvas, st) {
+  var cv = canvas.querySelector('.gm-fx');
+  var W = canvas.clientWidth, H = canvas.clientHeight;
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  var pw = Math.max(1, Math.round(W * dpr));
+  if (cv.width !== pw || cv.height !== Math.max(1, Math.round(H * dpr))) {
+    cv.width = pw; cv.height = Math.max(1, Math.round(H * dpr));
+  }
+  cv.style.display = 'block';
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  var regs = st.sheet.regs, im = st.sheet.im;
+  st.cities.forEach(function (c) {
+    var fi = (st.frame + c.id) % 28; // per-city phase: fires never sync
+    var r = regs['1yw_' + (fi < 10 ? '0' : '') + fi];
+    if (!r) return;
+    var cw = c.w * W, ch = c.h * H;
+    var dw = cw * 1.25, dh = dw * r.h / r.w;
+    var cx = c.x * W, cy = c.y * H - ch * 0.1;
+    if (r.rot) {
+      // Rotated regions sit size-swapped on the sheet (verified against the
+      // packer); undo it by drawing the patch rotated back.
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-Math.PI / 2);
+      ctx.drawImage(im, r.x, r.y, r.h, r.w, -dh / 2, -dw / 2, dh, dw);
+      ctx.restore();
+    } else {
+      ctx.drawImage(im, r.x, r.y, r.w, r.h, cx - dw / 2, cy - dh / 2, dw, dh);
+    }
+  });
+}
+
+function giClosePops() {
+  document.querySelectorAll('.gi-pop').forEach(function (p) { p.style.display = 'none'; });
+  document.querySelectorAll('.gm-city.sel').forEach(function (d) { d.classList.remove('sel'); });
+  document.querySelectorAll('.gm-canvas').forEach(function (cv) { cv._giPopCity = null; });
+}
+
+function giShowPop(mapEl, which, c, cityEl) {
+  giClosePops();
+  var pop = mapEl.querySelector('.gi-pop');
+  pop.innerHTML = '';
+  var t = document.createElement('b');
+  t.textContent = c.name || (which === 'ditich' ? 'Cứ điểm ' + c.id
+    : which === 'thuongdo' ? (c.lab === '🚢' ? 'Thuyền đang chạy' : 'Điểm trung chuyển')
+    : 'Thành ' + c.id);
+  pop.appendChild(t);
+  var o = document.createElement('div');
+  o.className = 'gi-owner';
+  o.textContent = (c.owner ? ('Chủ: ' + c.owner) : 'Chưa có chủ') + (c.fight ? ' · ⚔ đang giao tranh' : '');
+  if (which === 'thuongdo' && c.info) o.textContent = c.info;
+  pop.appendChild(o);
+  if (which === 'cuuu') {
+    // The in-game city panel: who is queued attacking, who is defending.
+    var det = document.createElement('div');
+    det.className = 'gi-detail small';
+    det.textContent = 'đang hỏi quân trong thành…';
+    pop._city = c.id;
+    pop.appendChild(det);
+    fetch('/events/mapcity?which=cuuu&city=' + c.id, { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error(r.status)); })
+      .then(function (j) {
+        if (pop._city !== c.id) return;
+        det.innerHTML = '';
+        function side(title, rows, cls) {
+          if (!rows || !rows.length) return;
+          var h = document.createElement('div');
+          h.textContent = title + ' (' + rows.length + ')';
+          det.appendChild(h);
+          rows.slice(0, 4).forEach(function (p) { // user: list dài quá che map → 4 dòng thôi
+            var li = document.createElement('div');
+            li.className = cls;
+            li.textContent = '• ' + (p.name || '?') + (p.unionName ? (' [' + p.unionName + ']') : (p.npc ? ' [NPC]' : ''));
+            det.appendChild(li);
+          });
+          if (rows.length > 4) {
+            var more = document.createElement('div');
+            more.className = 'small';
+            more.textContent = '… và ' + (rows.length - 4) + ' người khác';
+            det.appendChild(more);
+          }
+        }
+        if (!j.attackers.length && !j.defenders.length) det.textContent = 'Thành không có quân chốt — chỉ có NPC thủ vệ.';
+        side('⚔ Đang tấn công', j.attackers, 'gi-atk');
+        side('🛡 Đang phòng thủ', j.defenders, 'gi-def');
+      })
+      .catch(function () {
+        if (pop._city === c.id) det.textContent = 'không lấy được danh sách (acc treo chưa vào trận?)';
+      });
+  }
+  var acts;
+  if (which === 'thuongdo') {
+    acts = []; // read-only trade map: no march or attack orders exist here
+  } else if (which === 'ditich') { // kunlun pops come from giShowKuPop (any cell, not just cities)
+    // Ball GVG rooms are entered (and rally-marked), not marched into.
+    acts = [['enter', 'Vào cứ điểm', 'sec'], ['mark', 'Đánh dấu tập kết', 'sec']];
+  } else {
+    acts = [['move', 'Hành quân tới', 'sec'], ['attack', 'Tấn công thành', 'danger'], ['attack_thuve', 'Đánh thủ vệ', 'sec']];
+    if (which === 'cuuu') acts.push(['auto', 'Treo máy đánh thành', 'sec']);
+    // The manual "Lệnh đảo" form is gone (owner 2026-10-18) — the island
+    // board-level commands it carried live HERE too, so the map stays the
+    // single order UI (same set as the /bonglai mini app's HUD + popup).
+    if (which === 'bonglai' || which === 'thienma') {
+      acts.push(['canqua', '🍎 Ăn quả (+50)', 'sec', 'board'],
+        ['tangtoc', '⚡ Tăng tốc', 'sec', 'board'],
+        ['hoimau', '💧 Hồi máu', 'sec', 'board']);
+    }
+  }
+  acts.forEach(function (a) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = a[2];
+      b.textContent = a[1];
+      // Board-level commands (the last three above) carry no city id — an
+      // empty arg keeps canqua at the server's 50-fruit default instead of
+      // feeding it the city id as a fruit count.
+      var boardLevel = a[3] === 'board';
+      b.addEventListener('click', function () {
+        giOrder(which, a[0], a[1], boardLevel ? '' : c.id,
+          boardLevel ? ('mọi acc sự kiện ' + (GI_NAMES[which] || which)) : undefined);
+      });
+      pop.appendChild(b);
+    });
+  var canvas = mapEl.querySelector('.gm-canvas');
+  canvas._giPopCity = c;
+  giPopPos(canvas, c);
+  pop.style.display = 'block';
+  cityEl.classList.add('sel');
+  try { haptic('light'); } catch (e) { }
+}
+
+// Pop lives outside the camera transform (so its text never scales): place
+// it in screen px from the city's world point under the current pan/zoom.
+function giPopPos(canvas, c) {
+  var s = canvas._giCam, pop = canvas.querySelector('.gi-pop');
+  if (!s) return;
+  var W = canvas.clientWidth, H = canvas.clientHeight;
+  pop.style.left = Math.min(W * 0.86, Math.max(W * 0.14, s.tx + s.s * c.x * W)).toFixed(1) + 'px';
+  pop.style.top = Math.min(H * 0.78, Math.max(H * 0.04, s.ty + s.s * c.y * H)).toFixed(1) + 'px';
+}
+
+// giShowKuPop is the Côn Lôn block panel: the client opens it on ANY tile
+// (its Move and AttackCity buttons both just target that tile's posIndex),
+// so every passable cell on our board answers a tap — cities included, whose
+// live owner/fight come from the last SSE frame merged by city id.
+function giShowKuPop(mapEl, canvas, hit, which) {
+  giClosePops();
+  var pop = mapEl.querySelector('.gi-pop');
+  pop.innerHTML = '';
+  var sc = (canvas._kuCityAt || {})[hit.pos];
+  var fc = null, f = GI_STREAM[which] || GI_STREAM['kunlun'];
+  if (sc && f && f.cities) {
+    for (var i = 0; i < f.cities.length; i++) {
+      if (f.cities[i].id === sc.id) { fc = f.cities[i]; break; }
+    }
+  }
+  var t = document.createElement('b');
+  t.textContent = sc ? (sc.name || ('Thành ' + sc.id)) : ('Ô (' + hit.tx + ', ' + hit.ty + ')');
+  pop.appendChild(t);
+  var o = document.createElement('div');
+  o.className = 'gi-owner';
+  o.textContent = sc ? (((fc && fc.owner) ? ('Chủ: ' + fc.owner) : 'Chưa có chủ') +
+    (fc && fc.fight ? ' · ⚔ đang giao tranh' : '')) : ('Ô sàn · vị trí ' + hit.pos);
+  pop.appendChild(o);
+  // Full fan per the 2026-10-07 directive — no standing-position conditions.
+  [['march', '🏃 Hành quân tới ô này', 'sec'],
+  ['attack', '⚔ Tấn công ô này (acc sự kiện)', 'danger'],
+  ['explore', '🔍 Khám phá', 'sec'],
+  ['sweep', '🧹 Càn quét', 'danger']].forEach(function (a) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = a[2];
+    b.textContent = a[1];
+    b.addEventListener('click', function () {
+      giOrder(which || 'kunlun', a[0], a[1], hit.pos,
+        sc ? (sc.name || ('thành ' + sc.id)) : ('ô (' + hit.tx + ',' + hit.ty + ')'));
+    });
+    pop.appendChild(b);
+  });
+  canvas._giPopCity = { x: hit.x, y: hit.y };
+  giPopPos(canvas, canvas._giPopCity);
+  pop.style.display = 'block';
+  try { haptic('light'); } catch (e) { }
+}
+
+// The map popup's ONLY order path since the manual form was dropped (owner
+// 2026-10-18): POST /events/order over the data-live channel (fetch + toast,
+// never reloads the board). id "" = board-level command (canqua/tangtoc/
+// hoimau — server defaults the fruit count, no city arg).
+function giOrder(which, act, label, id, noun) {
+  // No confirm alert (owner 2026-10-19): the tap IS the decision.
+  var f = document.createElement('form');
+  f.method = 'post';
+  f.action = '/events/order';
+  // Same no-reload channel as the manual form: requestSubmit fires the
+  // layout interceptor (fetch + toast + state), so orders never disturb
+  // the map's camera or its live stream.
+  f.setAttribute('data-live', '1');
+  var vals = { csrf: GI_CSRF, which: which, act: act, arg: String(id) };
+  Object.keys(vals).forEach(function (n) {
+    var i = document.createElement('input');
+    i.type = 'hidden'; i.name = n; i.value = vals[n];
+    f.appendChild(i);
+  });
+  document.body.appendChild(f);
+  if (f.requestSubmit) f.requestSubmit(); else f.submit();
+}
+
+document.querySelectorAll('.gi-map').forEach(function (mapEl) {
+  var giWhich = mapEl.getAttribute('data-which');
+  var canvas0 = mapEl.querySelector('.gm-canvas');
+  giAttachCam(canvas0);
+  // Zoom buttons — same camera the wheel/pinch drive, just finger-friendly.
+  var zb = document.createElement('div');
+  zb.className = 'gm-zoom';
+  // The embedded card is a preview by design — every board now has a
+  // full-screen twin (same session cookie, no re-login); which→route names
+  // match one-to-one (kunlun/ditich/cuuu/bonglai/thienma/thuongdo).
+  var fs = document.createElement('a');
+  fs.href = '/' + giWhich; fs.textContent = '⛶'; fs.className = 'gm-fs';
+  fs.title = 'Mở bàn chơi toàn màn hình';
+  fs.addEventListener('click', function (e) { e.stopPropagation(); });
+  zb.appendChild(fs);
+  [['+', 'Phóng to', 1.5], ['−', 'Thu nhỏ', 1 / 1.5], ['⤢', 'Vừa khung', 0]].forEach(function (z) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = z[0]; b.title = z[1];
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var W = canvas0.clientWidth, H = canvas0.clientHeight;
+      if (z[2] === 0) giResetCam(canvas0);
+      else giZoomAt(canvas0, W / 2, H / 2, z[2]);
+    });
+    zb.appendChild(b);
+  });
+  mapEl.appendChild(zb);
+  // God Island cards draw the client's real scene: static layout + terrain
+  // sheet, one fetch each. Failure keeps the previous background look.
+  if (giWhich === 'bonglai' || giWhich === 'thienma') {
+    Promise.all([giLoadStatic(giWhich), giLoadSheet('gi', 'vn/RemoteImmortalIsland_atlas13.png')])
+      .then(function (rs) { canvas0._static = rs[0]; canvas0._sceneImg = rs[1]; giDrawScene(canvas0); })
+      .catch(function () { });
+  } else if (giWhich === 'cuuu') {
+    // Holy Land: exact world box + the client's own background islands.
+    giLoadStatic('cuuu').then(function (st) {
+      canvas0._static = st;
+      gmHLLoad(function () { gmHLGrid(canvas0); });
+    }).catch(giStatusErr(mapEl, 'không tải được nền Cửu U (máy chủ cũ? khởi động lại bot)'));
+  } else if (giWhich === 'kunlun' || giWhich === 'bacminh') {
+    // Kunlun engine (Côn Lôn / Đỉnh Bắc Minh): no markers at all — the
+    // background PNG is the art and giKuCellAt turns taps on ANY cell into
+    // the block panel (grid comes from this board's own mapstatic, col=61/119).
+    giLoadStatic(giWhich).then(function (st) {
+      canvas0._static = st;
+      canvas0._kuCityAt = {};
+      (st.cities || []).forEach(function (c) { if (c.p) canvas0._kuCityAt[c.p] = c; });
+      giDrawScene(canvas0);
+    }).catch(giStatusErr(mapEl, 'không tải được nền ' + (giWhich === 'bacminh' ? 'Bắc Minh' : 'Côn Lôn') + ' (máy chủ cũ? khởi động lại bot)'));
+  }
+  mapEl.addEventListener('click', function (e) {
+    var canvas = mapEl.querySelector('.gm-canvas');
+    if (canvas._giDragged) return; // a pan is not a tap on a city
+    var which = mapEl.getAttribute('data-which');
+    var city = e.target.closest('.gm-city');
+    if (!city) {
+      if (!e.target.closest('.gi-pop')) {
+        if ((which === 'kunlun' || which === 'bacminh') && !e.target.closest('.gm-zoom')) {
+          var hit = giKuCellAt(canvas, e);
+          if (hit) { giShowKuPop(mapEl, canvas, hit, which); return; }
+        }
+        giClosePops();
+      }
+      return;
+    }
+    e.stopPropagation();
+    var lay = GI_STREAM[which];
+    if (!lay || !lay.cities) return;
+    var id = Number(city.getAttribute('data-id'));
+    for (var i = 0; i < lay.cities.length; i++) {
+      if (lay.cities[i].id === id) { giShowPop(mapEl, which, lay.cities[i], city); return; }
+    }
+  });
+});
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.gi-map')) giClosePops();
+});
+
+window.addEventListener('tytd:map', function (e) { giOnMapFrame(e.detail); });
+
+// Subscription heartbeat for exactly the cards this page actually shows.
+var GI_WHICHS = ['bonglai', 'thienma', 'cuuu', 'ditich', 'thuongdo', 'kunlun', 'bacminh'].filter(function (w) { return giCard(w); });
+function giSub(on) {
+  GI_WHICHS.forEach(function (w) {
+    fetch('/events/mapsub?which=' + w + '&on=' + on, { credentials: 'same-origin' }).catch(function () { });
+  });
+}
+if (GI_WHICHS.length) {
+  giSub(1);
+  setInterval(function () { if (!document.hidden) giSub(1); }, 8000);
+  window.addEventListener('pagehide', function () { giSub(0); });
+  document.addEventListener('visibilitychange', function () { giSub(document.hidden ? 0 : 1); });
+}
+
+// Cửu U pre-open countdown: ticks from the server-anchored start ms and
+// reloads once at zero — the real card (or the map) renders in its place.
+(function () {
+  var el = document.getElementById('cuuu-cd');
+  if (!el) return;
+  var start = parseInt(el.getAttribute('data-start'), 10) || 0;
+  function tick() {
+    var d = start - Date.now();
+    if (d <= 0) { location.reload(); return; }
+    var h = Math.floor(d / 3600000), m = Math.floor(d / 60000) % 60, s = Math.floor(d / 1000) % 60;
+    el.textContent = 'còn ' + h + 'h' + m + "'" + (s < 10 ? '0' : '') + s + '"';
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
+// Expandable per-account event config panels (tab Sự kiện, 2026-11-09):
+// same sessionStorage trick as Đệ tử's cfg panels — the key is separate so
+// the two pages remember independently.
+function evCfgSet() {
+  try { return new Set(JSON.parse(sessionStorage.getItem('tytdEvCfgOpen') || '[]')); }
+  catch (e) { return new Set(); }
+}
+function evCfgStore(set) {
+  try { sessionStorage.setItem('tytdEvCfgOpen', JSON.stringify(Array.from(set))); } catch (e) {}
+}
+function evCfgOpen(id, on) {
+  var f = document.getElementById('ecfg-' + id), b = document.getElementById('ecfb-' + id);
+  if (!f) return;
+  f.hidden = !on;
+  if (b) {
+    b.textContent = on ? 'Thu gọn ▴' : 'Cấu hình ▾';
+    b.setAttribute('aria-expanded', on ? 'true' : 'false');
+  }
+  var set = evCfgSet();
+  if (on) set.add(String(id)); else set.delete(String(id));
+  evCfgStore(set);
+}
+function evCfgToggle(id) {
+  var f = document.getElementById('ecfg-' + id);
+  if (f) evCfgOpen(id, f.hidden);
+}
+(function () {
+  var set = evCfgSet();
+  document.querySelectorAll('form[id^="ecfg-"]').forEach(function (f) {
+    if (set.has(f.id.slice(5))) evCfgOpen(f.id.slice(5), true);
+  });
+})();
+</script>
+{{end}}

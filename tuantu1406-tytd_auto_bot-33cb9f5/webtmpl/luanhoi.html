@@ -1,0 +1,336 @@
+{{define "content"}}
+{{/* Luân Hồi Bí Cảnh — bracket map mini app. Same compositor family as Cửu U
+     (c1 = real game background tiles baked once, c2 = base buildings baked
+     once, co = per-frame dynamics, tx = screen-space text layer, all rAF
+     idle-skipped). Frames arrive over the shared mapstream (which=luanhoi):
+     one node per rival base at OUR anchor layout (posItem coords are buried
+     in the FGUI scene — the anchor table ships in scene.json so preview and
+     page agree). Fighter visibility Côn Lôn-style: challenge pushes ride
+     the server's notice ring (≤30 min), bases with hits get a red war ring
+     + "⚔ attacker −dmg" text; tapping a base pulls its guard list
+     (/events/mapcity?which=luanhoi → 217231) and the recent-hits detail.
+     Orders act on the leader's own account: attack = the
+     owner's war decision, cắn vé = the single sanctioned item command
+     (confirm required) [[tytd-item-ban]]. */}}
+<div class="lh-app">
+  <div class="lh-top">
+    <b>Luân Hồi Bí Cảnh</b>
+    <span id="lh-status" class="lh-status">đang tải cảnh…</span>
+  </div>
+  <div class="lh-stage" id="lh-stage">
+    <div class="lh-cam" id="lh-cam">
+      <canvas id="lh-c1"></canvas>
+      <canvas id="lh-c2"></canvas>
+      <canvas id="lh-co"></canvas>
+    </div>
+    <canvas id="lh-tx"></canvas>
+    <div class="lh-zoom">
+      <button type="button" id="lh-zin" title="Phóng to">+</button>
+      <button type="button" id="lh-zout" title="Thu nhỏ">−</button>
+      <button type="button" id="lh-fit" title="Vừa khung">⤢</button>
+    </div>
+    <div class="lh-hud">
+      <button type="button" class="item" id="lh-ve1">🎫 Cắn vé ×1</button>
+      <button type="button" class="item" id="lh-ve5">🎫 ×5</button>
+    </div>
+    <div class="tk-pop lh-pop" id="lh-pop" style="display:none"></div>
+  </div>
+</div>
+
+<script src="/webstatic/appkit.js"></script>
+<style>
+.lh-app{position:fixed;inset:0;background:#0a0e18}
+.lh-top{position:absolute;top:calc(env(safe-area-inset-top) + 6px);left:8px;right:76px;z-index:6;
+  display:flex;align-items:center;gap:8px;padding:5px 10px;color:#ebebeb;font-size:14px;
+  background:rgba(10,14,24,.55);border:1px solid rgba(60,80,105,.4);border-radius:10px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
+.lh-status{margin-left:auto;font-size:11px;color:#8fa2b5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lh-stage{position:absolute;inset:0;overflow:hidden;touch-action:none}
+.lh-cam{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.lh-cam canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#lh-tx{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;display:block}
+.lh-zoom{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 44px);display:flex;flex-direction:column;gap:6px;z-index:5}
+.lh-zoom button{width:36px;height:36px;border-radius:8px;border:0;background:#1b2433;color:#dfe8f2;font-size:18px;line-height:1}
+/* HUD rides the right rail like Côn Lôn/Cửu U (owner 2026-10-10 "đồng bộ
+   thiết kế"); vé buttons are item-use → red-edge .item styling. */
+.lh-hud{position:absolute;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);display:flex;flex-direction:column;gap:6px;z-index:5}
+.lh-hud button{padding:8px 11px;border-radius:9px;border:1px solid rgba(202,166,74,.45);background:#1b2433;color:#f0e9d8;font-size:12px}
+.lh-hud button:active{transform:scale(.94)}
+.lh-hud button.item{border-color:rgba(255,120,110,.6);color:#ffe0da}
+.lh-pop{position:absolute;z-index:9;min-width:210px;max-width:80%;background:rgba(13,19,30,.97);
+  border:1px solid #2c3a4e;border-radius:10px;padding:9px 11px;color:#dfe8f2;font-size:13px}
+.lh-pop b{display:block;margin-bottom:3px}
+.lh-pop .o{color:#9fb2c6;font-size:12px;margin-bottom:4px}
+.lh-pop .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.lh-pop button{padding:6px 10px;border-radius:8px;border:0;background:#27405e;color:#eaf2fb;font-size:12px}
+.lh-pop button.danger{background:#5e2a2a}
+.lh-det{font-size:11px;color:#9fb2c6;line-height:1.5;margin:2px 0 4px;word-break:break-word}
+.lh-det div:first-child{color:#cfe0f2}
+</style>
+
+<script>
+var LH_CSRF = '{{.CSRF}}';
+var LH_ART = function (p) { return '/events/mapart?b=lh&p=' + encodeURIComponent(p); };
+var lhSc = null, lhImgs = {}, lhFrame = null, lhK = 1;
+var lhStage, lhCam, lhC1, lhC2, lhCo, lhCamK, lhTx;
+var lhAnimDirty = true, lhTpx = 0, lhTox = 0, lhToy = 0;
+var lhPopFor = null;
+
+function lhPX(x) { return lhTox + x * lhTpx; }
+function lhPY(y) { return lhToy + y * lhTpx; }
+function lhStatus(t) { var el = document.getElementById('lh-status'); if (el) el.textContent = t; }
+function lhTextSpace() {
+  var W = lhStage.clientWidth, H = lhStage.clientHeight;
+  if (!W || !H) return null;
+  var dpr = window.devicePixelRatio || 1;
+  var bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+  if (lhTx.width !== bw || lhTx.height !== bh) { lhTx.width = bw; lhTx.height = bh; }
+  var c = lhTx.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, W, H);
+  return c;
+}
+
+function lhBoot() {
+  TK.fetchJSON(LH_ART('scene.json'))
+    .then(function (sc) {
+      lhSc = sc;
+      return TK.preload([LH_ART(sc.bg), LH_ART(sc.base)]);
+    })
+    .then(function (m) { lhImgs = m; lhResize(); lhBake();
+      TK.heartbeat('luanhoi'); requestAnimationFrame(lhLoop); })
+    .catch(function () { lhStatus('không tải được nền Luân Hồi (binary cũ? khởi động lại bot)'); });
+}
+
+function lhResize() {
+  TK.fitStageFill(lhStage, lhCam, lhSc.worldW / lhSc.worldH);
+  lhK = TK.fitSize(lhSc.worldW, lhSc.worldH, 4096, 14000000);
+  var W = Math.round(lhSc.worldW * lhK), H = Math.round(lhSc.worldH * lhK);
+  [lhC1, lhC2, lhCo].forEach(function (cv) { TK.setSize(cv, W, H); });
+  lhAnimDirty = true;
+  lhCamK.clamp(); lhCamK.apply();
+}
+
+// c1: the stitched battle background (client's own 4 tiles, served as one).
+function lhBake() {
+  var W = lhC1.width, H = lhC1.height, c = lhC1.getContext('2d');
+  c.fillStyle = '#0a0e18'; c.fillRect(0, 0, W, H);
+  var im = lhImgs[LH_ART(lhSc.bg)];
+  if (im) c.drawImage(im, 0, 0, W, H);
+  // c2: base buildings at the anchor table — static per frame set, repaint
+  // each frame on co instead? buildings never move; bake them once here.
+  var c2 = lhC2.getContext('2d');
+  c2.clearRect(0, 0, lhC2.width, lhC2.height);
+}
+
+TK.mapFrame('luanhoi', function (f) {
+  lhFrame = f; lhAnimDirty = true;
+  if (f && !f.idle && !f.err && f.lh) {
+    lhStatus('trực tiếp · vòng ' + (f.lh.round || '?') + ' · lượt đánh còn ' + (f.lh.battleNum || 0));
+  } else {
+    lhStatus(f && (f.idle || f.err) ? (f.err || 'chưa có vòng chiến / chưa thấy bảng đấu') : 'đang chờ…');
+  }
+  if (lhPopFor) lhPopRender();
+});
+
+// co: per-node color ring + hp pill live layer (bases themselves are baked
+// into c2 on first frame so the light bg isn't re-scaled 60×/s).
+var lhBakedCount = -1;
+function lhNodes() { return (lhFrame && lhFrame.lh && lhFrame.lh.nodes) || []; }
+function lhBakeBases() {
+  var im = lhImgs[LH_ART(lhSc.base)]; if (!im) return;
+  var c = lhC2.getContext('2d');
+  c.clearRect(0, 0, lhC2.width, lhC2.height);
+  var dw = lhSc.drawW * lhK, dh = lhSc.baseH / lhSc.baseW * dw;
+  lhNodes().forEach(function (n) {
+    var x = n.x * lhC2.width, y = n.y * lhC2.height;
+    // soft ground shadow
+    c.save();
+    c.globalAlpha = 0.35; c.fillStyle = '#08101a';
+    c.beginPath(); c.ellipse(x, y, dw * 0.55, dh * 0.1, 0, 0, 6.2832); c.fill();
+    c.restore();
+    c.drawImage(im, x - dw / 2, y - dh, dw, dh);
+  });
+  lhBakedCount = lhNodes().length;
+}
+function lhLoop() {
+  requestAnimationFrame(lhLoop);
+  if (document.hidden || !lhSc) return;
+  var f = lhFrame;
+  if (lhNodes().length !== lhBakedCount) lhBakeBases();
+  if (!lhAnimDirty) return;
+  lhAnimDirty = false;
+  var c = lhCo.getContext('2d');
+  c.clearRect(0, 0, lhCo.width, lhCo.height);
+  var tc = lhTextSpace();
+  if (tc && lhCo.width && lhCam.clientWidth) {
+    lhTpx = lhCamK.s * lhCam.clientWidth / lhCo.width;
+    lhTox = lhCam.offsetLeft + lhCamK.tx;
+    lhToy = lhCam.offsetTop + lhCamK.ty;
+  } else lhTpx = 0;
+  var W = lhCo.width, H = lhCo.height;
+  lhNodes().forEach(function (n) {
+    var x = n.x * W, y = n.y * H;
+    // union ring at the gate of the base
+    c.strokeStyle = n.self ? '#ffec78' : (n.color || '#dfe8f2');
+    c.lineWidth = Math.max(2, 5 * lhK);
+    c.beginPath(); c.ellipse(x, y, lhSc.drawW * lhK * 0.62, lhSc.drawW * lhK * 0.18, 0, 0, 6.2832); c.stroke();
+    if (n.defeat) {
+      c.fillStyle = 'rgba(20,24,34,.75)';
+      c.beginPath(); c.arc(x, y - lhSc.drawW * lhK * 0.5, lhSc.drawW * lhK * 0.7, 0, 6.2832); c.fill();
+    }
+    // red war ring: someone hit this base inside the fight window (≤30 min,
+    // pushed by the server's challenge notices — Côn Lôn fight-disc language)
+    if (n.atk && n.atk.length) {
+      c.strokeStyle = '#ff4655';
+      c.lineWidth = Math.max(3, 7 * lhK);
+      c.beginPath(); c.ellipse(x, y, lhSc.drawW * lhK * 0.78, lhSc.drawW * lhK * 0.24, 0, 0, 6.2832); c.stroke();
+      c.strokeStyle = 'rgba(255,70,85,.35)';
+      c.lineWidth = Math.max(2, 12 * lhK);
+      c.beginPath(); c.ellipse(x, y, lhSc.drawW * lhK * 0.78, lhSc.drawW * lhK * 0.24, 0, 0, 6.2832); c.stroke();
+    }
+  });
+  // names + stats in screen space (crisp at any zoom)
+  if (tc && lhTpx > 0) {
+    var fs = Math.max(10, Math.round(30 * lhK)) * lhTpx;
+    tc.textAlign = 'center'; tc.textBaseline = 'middle';
+    tc.font = 'bold ' + fs + 'px system-ui, sans-serif';
+    tc.lineWidth = Math.max(2, fs * 0.16); tc.strokeStyle = 'rgba(0,0,0,.75)';
+    lhNodes().forEach(function (n) {
+      var label = (n.rank ? n.rank + '. ' : '') + n.name + (n.shield ? ' 🛡' : '') + (n.defeat ? ' ✖' : '');
+      var sx = lhPX(n.x * lhSc.worldW), sy = lhPY(n.y * lhSc.worldH) - lhTpx * (lhSc.drawW * 0.62 + 40);
+      var tw = tc.measureText(label).width;
+      tc.fillStyle = 'rgba(8,12,20,.72)';
+      tc.fillRect(sx - tw / 2 - 4, sy - fs * 0.8, tw + 8, fs * 1.6);
+      tc.fillStyle = n.self ? '#ffec78' : '#fff';
+      tc.fillText(label, sx, sy);
+      var sub = 'điểm ' + n.score + ' · máu ' + (n.hp | 0);
+      var fs2 = fs * 0.78; tc.font = fs2 + 'px system-ui, sans-serif';
+      tc.fillStyle = '#bcd0e4';
+      tc.fillText(sub, sx, sy + fs * 1.15);
+      if (n.atk && n.atk.length) {
+        tc.font = 'bold ' + fs2 + 'px system-ui, sans-serif';
+        tc.fillStyle = '#ff6b78';
+        tc.fillText('⚔ ' + n.atk[0].n + ' −' + n.atk[0].d, sx, sy + fs * 2.05);
+      }
+    });
+  }
+}
+
+// ---- popup --------------------------------------------------------------
+function lhClosePop() { lhPopFor = null; document.getElementById('lh-pop').style.display = 'none'; }
+function lhOrder(act, arg, label, confirmMsg) {
+  TK.order({ csrf: LH_CSRF, which: 'luanhoi', act: act, arg: arg, label: label,
+    noun: 'acc chính', confirm: confirmMsg });
+}
+function lhPopRender() {
+  var pop = document.getElementById('lh-pop'), hit = lhPopFor;
+  pop.innerHTML = '';
+  TK.popHead(pop, {
+    img: LH_ART(lhSc.base),
+    name: (hit.rank ? hit.rank + '. ' : '') + hit.name,
+    owner: hit.self ? 'Bang của bạn' : '', color: hit.self ? '#ffec78' : hit.color,
+    sub: 'Điểm ' + hit.score + ' · Máu ' + (hit.hp | 0) +
+      (hit.shield ? ' · khiên kích hoạt gần đây' : '') +
+      (hit.defeat ? ' · đã bại' : ''),
+  });
+  var det = document.createElement('div'); det.className = 'lh-det';
+  (hit.atk || []).slice(0, 5).forEach(function (a) {
+    var d = document.createElement('div');
+    d.textContent = '⚔ ' + (a.n || '?') + ' đánh −' + a.d + ' (' + lhAgo(a.ago) + ')';
+    det.appendChild(d);
+  });
+  var df = document.createElement('div'); df.textContent = '🛡 Thủ: đang lấy…';
+  det.insertBefore(df, det.firstChild);
+  lhDefenders(hit.id, function (names, err) {
+    if (lhPopFor !== hit) return;
+    df.textContent = err ? ('🛡 ' + err)
+      : (names.length ? ('🛡 Thủ ' + names.length + ': ' + names.slice(0, 6).join(', ') +
+          (names.length > 6 ? ' (+' + (names.length - 6) + ' khác)' : '')) : '🛡 Không thấy ai thủ');
+  });
+  pop.appendChild(det);
+  var row = document.createElement('div'); row.className = 'row';
+  if (!hit.self) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'danger'; b.textContent = '⚔️ Tấn công';
+    b.addEventListener('click', function () {
+      lhOrder('attack', hit.id, 'Tấn công ' + hit.name,
+        'Tấn công base ' + hit.name + '? (trừ 1 lượt đánh, không dùng vật phẩm)');
+    });
+    row.appendChild(b);
+  }
+  pop.appendChild(row);
+}
+function lhAgo(s) {
+  if (s == null || isNaN(s)) return '?';
+  if (s < 60) return s + 's trước';
+  if (s < 3600) return Math.round(s / 60) + 'p trước';
+  return Math.round(s / 360) / 10 + 'h trước';
+}
+// 30s cache so tapping the same base across SSE refreshes never re-pulls.
+var lhDetCache = { union: 0, t: 0, names: null, pending: [] };
+function lhDefenders(union, cb) {
+  var now = Date.now();
+  if (lhDetCache.union === union && lhDetCache.pending.length) { lhDetCache.pending.push(cb); return; }
+  if (lhDetCache.union === union && now - lhDetCache.t < 30000) { cb(lhDetCache.names, null); return; }
+  lhDetCache = { union: union, t: now, names: null, pending: [cb] };
+  function settle(names, err) {
+    lhDetCache.names = names;
+    if (err) lhDetCache.t = 0;
+    var cbs = lhDetCache.pending; lhDetCache.pending = [];
+    cbs.forEach(function (f) { f(names, err); });
+  }
+  fetch('/events/mapcity?which=luanhoi&union=' + union, { credentials: 'same-origin' })
+    .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+    .then(function (j) { settle((j.defenders || []).map(function (d) { return d.name || '?'; }), null); })
+    .catch(function () { settle([], 'không lấy được danh sách thủ (acc chưa vào vòng?)'); });
+}
+function lhTap(e) {
+  var nrm = TK.normOf(e, lhCam);
+  if (!nrm) { lhClosePop(); return; }
+  var wx = nrm.x * lhSc.worldW, wy = nrm.y * lhSc.worldH;
+  var best = null, bd = 1e18;
+  lhNodes().forEach(function (n) {
+    var x = n.x * lhSc.worldW, y = n.y * lhSc.worldH - lhSc.drawW * 0.55;
+    var d = Math.hypot(wx - x, wy - y);
+    if (d < lhSc.drawW * 1.05 && d < bd) { best = n; bd = d; }
+  });
+  if (!best) { lhClosePop(); return; }
+  lhPopFor = best;
+  lhPopRender();
+  var pop = document.getElementById('lh-pop');
+  pop.style.display = 'block';
+  TK.placePop(pop, lhStage, lhCam, best.x, best.y - 0.06);
+  TK.haptic('light');
+}
+
+lhStage = document.getElementById('lh-stage');
+lhCam = document.getElementById('lh-cam');
+lhC1 = document.getElementById('lh-c1'); lhC2 = document.getElementById('lh-c2');
+lhCo = document.getElementById('lh-co'); lhTx = document.getElementById('lh-tx');
+lhCamK = TK.cam(lhStage, lhCam, { max: 8, exclude: '.lh-pop,.lh-zoom,.lh-hud', change: function () {
+  lhAnimDirty = true;
+  if (lhPopFor) TK.placePop(document.getElementById('lh-pop'), lhStage, lhCam, lhPopFor.x, lhPopFor.y - 0.06);
+} });
+lhCamK.onTap(lhTap);
+document.getElementById('lh-zin').addEventListener('click', function (e) {
+  e.stopPropagation(); lhCamK.zoomAt(lhStage.clientWidth / 2, lhStage.clientHeight / 2, 1.5);
+});
+document.getElementById('lh-zout').addEventListener('click', function (e) {
+  e.stopPropagation(); lhCamK.zoomAt(lhStage.clientWidth / 2, lhStage.clientHeight / 2, 1 / 1.5);
+});
+document.getElementById('lh-fit').addEventListener('click', function (e) {
+  e.stopPropagation(); lhCamK.reset();
+});
+document.getElementById('lh-ve1').addEventListener('click', function (e) {
+  e.stopPropagation();
+  lhOrder('ve', '1', 'Cắn vé ×1', 'DÙNG 1 VÉ trong túi để +1 lượt đánh? (lệnh dùng vật phẩm — chỉ làm khi bạn bấm)');
+});
+document.getElementById('lh-ve5').addEventListener('click', function (e) {
+  e.stopPropagation();
+  lhOrder('ve', '5', 'Cắn vé ×5', 'DÙNG 5 VÉ trong túi để +5 lượt đánh? (lệnh dùng vật phẩm — chỉ làm khi bạn bấm)');
+});
+window.addEventListener('resize', function () { if (lhSc) { lhResize(); lhBake(); lhBakeBases(); } });
+lhBoot();
+</script>
+{{end}}

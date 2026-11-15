@@ -1,0 +1,275 @@
+{{define "content"}}
+{{$c := .CSRF}}
+{{$open := .Data.Open}}
+<div class="card">
+  <h1>Thêm đệ tử</h1>
+  <form method="post" action="/members">
+    <input type="hidden" name="csrf" value="{{$c}}">
+    <input type="hidden" name="action" value="add">
+    <div class="grid">
+      <div><label>Tên đăng nhập game</label><input type="text" name="username" autocomplete="off"></div>
+      <div><label>Mật khẩu game</label><input type="password" name="password" autocomplete="new-password"></div>
+      <div><label>Server ID</label><input type="number" name="server_id" min="1"></div>
+    </div>
+    <p style="margin-top:12px"><button type="submit">Thêm và đăng nhập</button></p>
+  </form>
+</div>
+
+<div class="card">
+  <h1>Điều khiển cả bang đệ tử</h1>
+  <div class="btns">
+    <form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="login_all"><button>Đăng nhập hết</button></form>
+    <form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="logout_all"><button class="danger">Đăng xuất hết</button></form>
+    <form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="chuot_on_all"><button class="g mini">Chuột bật hết</button></form>
+    <form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="chuot_off_all"><button class="danger mini">Chuột tắt hết</button></form>
+    <form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="chatcay_on_all"><button class="mini">Chặt cây hết</button></form>
+    <form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="chatcay_xave_on_all"><button class="mini">Chặt + đấu pháp hết</button></form>
+    {{if $open.sw_taydu}}<form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="taydu_on_all"><button class="g mini">Tây Du bật hết</button></form>
+    <form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="taydu_off_all"><button class="danger mini">Tây Du tắt hết</button></form>{{end}}
+    {{if $open.sw_thanlong}}<form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="thanlong_on_all"><button class="mini" data-nodisable>🔥 Luyện Khí hết</button></form>{{end}}
+    {{if .Data.AnyLK}}<form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="lkstart_all"><button class="g mini" data-nodisable>🗡 Tự chơi Luyện Khí hết</button></form>{{end}}
+  </div>
+</div>
+
+<div class="card">
+  <h1>⚙️ Cấu hình hàng loạt — tất cả đệ tử</h1>
+  <p class="small">Áp một lượt cho <b>mọi</b> đệ tử: ngưỡng, ưu tiên và sự kiện (đủ bộ như trang Cài đặt của acc chính, trừ ủy thác/lịch/mật khẩu). Sự kiện chỉ hiện khi server đang mở.</p>
+  <form method="post" action="/members" data-live="1">
+    <input type="hidden" name="csrf" value="{{$c}}">
+    <input type="hidden" name="action" value="config_all">
+    <div class="grid">
+      <div><label>Đạo hữu tối thiểu (min_dao)</label><input type="number" name="min_dao" min="0" value="4"></div>
+      <div><label>Level bình tối thiểu (min_binh)</label><input type="number" name="min_binh" min="0" value="2"></div>
+      <div><label>Lưu ly tối thiểu (min_luuly)</label><input type="number" name="min_luuly" min="0" value="6"></div>
+      <div><label>Thu nhập Tụ Linh tối thiểu (min_tuling)</label><input type="number" name="min_tuling" min="0" placeholder="trống = giữ nguyên"></div>
+    </div>
+    <label class="sw" style="margin-top:10px"><input type="checkbox" name="bottle_pref"><i></i><span>Ưu tiên bình (bottle_pref)</span></label>
+    <p class="small" style="margin:2px 0 0">⚠️ Chỉ bật khi <b>full chuột</b> và ở <b>server cũ</b>.</p>
+    <label class="sw"><input type="checkbox" name="auto_login" checked><i></i><span>Tự đăng nhập khi bot khởi động (auto_login)</span></label>
+    <label class="sw"><input type="checkbox" name="auto_start_chuot" checked><i></i><span>Tự bật chuột khi vào game (auto_start_chuot)</span></label>
+    <label class="sw"><input type="checkbox" name="tu_linh" checked><i></i><span>Tự động thu năng lượng Tụ Linh (tu_linh)</span></label>
+    {{if $open.auto_thiendo}}
+    <label class="sw"><input type="hidden" name="shown_auto_thiendo" value="1"><input type="checkbox" name="auto_thiendo" checked><i></i><span>Tự chạy thuyền Tiên Vực Thương Đồ (auto_thiendo_tienvuc)</span></label>
+    {{end}}
+    {{if $open.auto_thiendo_toc}}
+    <label class="sw"><input type="hidden" name="shown_auto_thiendo_toc" value="1"><input type="checkbox" name="auto_thiendo_toc" checked><i></i><span>Tự tăng tốc tiến độ Thiên Vực (auto_tangtoc_tienvuc)</span></label>
+    {{end}}
+    {{if $open.auto_luanhoi}}
+    <label class="sw"><input type="hidden" name="shown_auto_luanhoi" value="1"><input type="checkbox" name="auto_luanhoi" checked><i></i><span>Tự chơi Luân Hồi Bí Cảnh — xe thư thương cả ngày khi vòng chiến mở, không tốn item, không đánh trận bang thay</span></label>
+    {{end}}
+    {{if $open.auto_tiencanh}}
+    <label class="sw"><input type="hidden" name="shown_auto_tiencanh" value="1"><input type="checkbox" name="auto_tiencanh" checked><i></i><span>Tự chơi Tiên Cảnh Vị Ương — cuốc bản đồ giờ khám phá, không bao giờ cắn item thể lực, không đánh trận bang thay</span></label>
+    {{end}}
+    {{if $open.auto_thuongminh}}
+    <label class="sw"><input type="hidden" name="shown_auto_thuongminh" value="1"><input type="checkbox" name="auto_thuongminh" checked><i></i><span>Tự chơi Thương Minh Yêu Vực — chạy free, rèn bảo thạch ưu tiên sát thương cuối, không bao giờ dùng vật phẩm thể lực, không đánh chiến bang thay</span></label>
+    {{end}}
+    <p style="margin-top:12px"><button type="submit">Áp cho tất cả đệ tử</button></p>
+  </form>
+</div>
+
+<div class="card">
+  <h1>Danh sách đệ tử</h1>
+  {{with .Data.Rows}}
+  <div class="btns" style="margin-bottom:6px">
+    <button class="sec mini" type="button" onclick="cfgAll(true)">Mở hết cấu hình</button>
+    <button class="sec mini" type="button" onclick="cfgAll(false)">Thu hết</button>
+  </div>
+  {{end}}
+  {{if not .Data.Rows}}<p class="small">Chưa có đệ tử nào.</p>{{end}}
+  {{with .Data.Rows}}
+  {{range .}}
+  <div class="lrow">
+    <div class="lmain">
+      <div class="lname">{{if .M.IngameName}}{{.M.IngameName}}{{else}}{{.M.Username}}{{end}}</div>
+      <div class="lsub">{{.M.Username}} · <code>{{.M.ID}}</code> · sv {{.M.ServerID}} · VIP {{.M.VipLevel}}{{if gt .M.VipLevel 0}} tới {{.M.VipExpireAt.Format "02/01/2006"}}{{end}}</div>
+      <div class="lacts">
+        <form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="login"><input type="hidden" name="member_id" value="{{.M.ID}}">
+          <button class="mini" type="submit">Đăng nhập</button></form>
+        {{if .Running}}
+        {{if .OpenLK}}<form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="lkstart"><input type="hidden" name="member_id" value="{{.M.ID}}">
+          <button class="g mini" type="submit" data-nodisable>🗡 Luyện Khí</button></form>{{end}}
+        <form method="post" action="/members" data-live="1" data-flip="Chuột"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="rttoggle"><input type="hidden" name="member_id" value="{{.M.ID}}"><input type="hidden" name="feat" value="{{if .T.chuot}}chuot_off{{else}}chuot_on{{end}}">
+          <button class="{{if .T.chuot}}danger{{else}}g{{end}} mini" type="submit">Chuột: {{if .T.chuot}}BẬT{{else}}TẮT{{end}}</button></form>
+        <form method="post" action="/members" data-live="1" data-flip="Mạo hiểm"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="rttoggle"><input type="hidden" name="member_id" value="{{.M.ID}}"><input type="hidden" name="feat" value="{{if .T.maohiem}}maohiem_off{{else}}maohiem_on{{end}}">
+          <button class="{{if .T.maohiem}}danger{{else}}g{{end}} mini" type="submit">Mạo hiểm: {{if .T.maohiem}}BẬT{{else}}TẮT{{end}}</button></form>
+        <form method="post" action="/members" data-live="1" data-flip="Lục đạo"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="rttoggle"><input type="hidden" name="member_id" value="{{.M.ID}}"><input type="hidden" name="feat" value="{{if .T.lucdao}}lucdao_off{{else}}lucdao_on{{end}}">
+          <button class="{{if .T.lucdao}}danger{{else}}g{{end}} mini" type="submit">Lục đạo: {{if .T.lucdao}}BẬT{{else}}TẮT{{end}}</button></form>
+        <form method="post" action="/members" data-live="1" data-flip="Yêu tháp"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="rttoggle"><input type="hidden" name="member_id" value="{{.M.ID}}"><input type="hidden" name="feat" value="{{if .T.yeuthap}}yeuthap_off{{else}}yeuthap_on{{end}}">
+          <button class="{{if .T.yeuthap}}danger{{else}}g{{end}} mini" type="submit">Yêu tháp: {{if .T.yeuthap}}BẬT{{else}}TẮT{{end}}</button></form>
+        <form method="post" action="/members" data-live="1" data-flip="Huyết mạch"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="rttoggle"><input type="hidden" name="member_id" value="{{.M.ID}}"><input type="hidden" name="feat" value="{{if .T.huyetmach}}huyetmach_off{{else}}huyetmach_on{{end}}">
+          <button class="{{if .T.huyetmach}}danger{{else}}g{{end}} mini" type="submit">Huyết mạch: {{if .T.huyetmach}}BẬT{{else}}TẮT{{end}}</button></form>
+        <form method="post" action="/members" data-live="1" data-flip="chặt cây"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="rttoggle"><input type="hidden" name="member_id" value="{{.M.ID}}"><input type="hidden" name="feat" value="{{if not .T.peach}}chatcay_on{{else if .T.xave}}chatcay_off{{else}}chatcay_xave_on{{end}}">
+          <button class="{{if not .T.peach}}g{{else}}danger{{end}} mini" type="submit">{{if not .T.peach}}Chặt cây: TẮT{{else if .T.xave}}Chặt + đấu pháp{{else}}Chặt cây: BẬT{{end}}</button></form>
+        <form method="post" action="/members" data-live="1" data-flip="Thông báo"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="rttoggle"><input type="hidden" name="member_id" value="{{.M.ID}}"><input type="hidden" name="feat" value="{{if .T.notify}}notify_off{{else}}notify_on{{end}}">
+          <button class="{{if .T.notify}}danger{{else}}g{{end}} mini" type="submit">Thông báo: {{if .T.notify}}BẬT{{else}}TẮT{{end}}</button></form>
+        {{if .OpenTayDu}}<form method="post" action="/members" data-live="1" data-flip="Tây Du"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="rttoggle"><input type="hidden" name="member_id" value="{{.M.ID}}"><input type="hidden" name="feat" value="{{if .T.taydu}}taydu_off{{else}}taydu_on{{end}}">
+          <button class="{{if .T.taydu}}danger{{else}}g{{end}} mini" type="submit">Tây Du: {{if .T.taydu}}BẬT{{else}}TẮT{{end}}</button></form>{{end}}
+        {{if .OpenThanLong}}<form method="post" action="/members" data-live="1"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="rttoggle"><input type="hidden" name="member_id" value="{{.M.ID}}"><input type="hidden" name="feat" value="thanlong_run">
+          <button class="{{if .T.thanlong}}danger{{else}}g{{end}} mini" type="submit" data-nodisable>🔥 Luyện Khí{{if .T.thanlong}}…{{end}}</button></form>{{end}}
+        {{end}}
+        <form method="post" action="/members"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="autologin"><input type="hidden" name="member_id" value="{{.M.ID}}">
+          <button class="{{if .M.AutoLogin}}g{{else}}sec{{end}} mini" type="submit">Tự đăng nhập: {{if .M.AutoLogin}}BẬT{{else}}TẮT{{end}}</button></form>
+        <form method="post" action="/members"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="password"><input type="hidden" name="member_id" value="{{.M.ID}}">
+          <input type="hidden" name="password" id="pwi-{{.M.ID}}">
+          <button class="sec mini" type="button" onclick="askPw('{{.M.ID}}','{{.M.Username}}')">Đổi MK</button></form>
+        <form method="post" action="/members"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="redeem"><input type="hidden" name="member_id" value="{{.M.ID}}">
+          <input type="hidden" name="code" id="code-{{.M.ID}}">
+          <button class="sec mini" type="button" onclick="askCode('{{.M.ID}}','{{.M.Username}}')">Nạp mã</button></form>
+        <button class="sec mini cfbtn" id="cfb-{{.M.ID}}" type="button" aria-expanded="false" aria-controls="cfg-{{.M.ID}}" onclick="cfgToggle('{{.M.ID}}')">Cấu hình ▾</button>
+        <form method="post" action="/members"><input type="hidden" name="csrf" value="{{$c}}"><input type="hidden" name="action" value="remove"><input type="hidden" name="member_id" value="{{.M.ID}}">
+          <button class="danger mini" type="submit" onclick="return confirm('Xoá đệ tử {{.M.ID}}?')">Xoá</button></form>
+      </div>
+      <form class="mcfg" id="cfg-{{.M.ID}}" method="post" action="/members" data-live="1" hidden>
+        <input type="hidden" name="csrf" value="{{$c}}">
+        <input type="hidden" name="action" value="config">
+        <input type="hidden" name="member_id" value="{{.M.ID}}">
+        <h2>Thông tin đăng nhập</h2>
+        <div class="grid">
+          <div><label>Tên đăng nhập game</label><input type="text" name="username" value="{{.M.Username}}" autocomplete="off"></div>
+          <div><label>Server ID</label><input type="number" name="server_id" min="1" value="{{.M.ServerID}}"></div>
+          <div><label>Mật khẩu mới</label><input type="password" name="password" autocomplete="new-password" placeholder="bỏ trống = giữ nguyên"></div>
+        </div>
+        <h2 style="margin-top:14px">Ngưỡng auto chuột &amp; ưu tiên</h2>
+        <div class="grid">
+          <div><label>Đạo hữu tối thiểu (min_dao)</label><input type="number" name="min_dao" min="0" value="{{.M.MinPeachLevel}}"></div>
+          <div><label>Level bình tối thiểu (min_binh)</label><input type="number" name="min_binh" min="0" value="{{.M.MinBottleLevel}}"></div>
+          <div><label>Lưu ly tối thiểu (min_luuly)</label><input type="number" name="min_luuly" min="0" value="{{.M.MinLuuLyLevel}}"></div>
+          <div><label>Thu nhập Tụ Linh tối thiểu (min_tuling)</label><input type="number" name="min_tuling" min="0" value="{{.M.MinGatherIncome}}"></div>
+        </div>
+        <label class="sw"><input type="checkbox" name="bottle_pref" {{if .M.BottlePrefered}}checked{{end}}><i></i><span>Ưu tiên bình (bottle_pref)</span></label>
+        <p class="small" style="margin:2px 0 0">⚠️ Chỉ bật khi <b>full chuột</b> và ở <b>server cũ</b>.</p>
+        <label class="sw"><input type="checkbox" name="auto_login" {{if .M.AutoLogin}}checked{{end}}><i></i><span>Tự đăng nhập khi bot khởi động (auto_login)</span></label>
+        <label class="sw"><input type="checkbox" name="auto_start_chuot" {{if .M.AutoMouse}}checked{{end}}><i></i><span>Tự bật chuột khi vào game (auto_start_chuot)</span></label>
+        <label class="sw"><input type="checkbox" name="tu_linh" {{if .M.AutoGather}}checked{{end}}><i></i><span>Tự động thu năng lượng Tụ Linh (tu_linh)</span></label>
+        {{if $open.auto_thiendo}}
+        <label class="sw"><input type="hidden" name="shown_auto_thiendo" value="1"><input type="checkbox" name="auto_thiendo" {{if .M.AutoSkyTrade}}checked{{end}}><i></i><span>Tự chạy thuyền Tiên Vực Thương Đồ (auto_thiendo_tienvuc)</span></label>
+        {{end}}
+        {{if $open.auto_thiendo_toc}}
+        <label class="sw"><input type="hidden" name="shown_auto_thiendo_toc" value="1"><input type="checkbox" name="auto_thiendo_toc" {{if .M.AutoSkyTradeSpeed}}checked{{end}}><i></i><span>Tự tăng tốc tiến độ Thiên Vực — 21:58 tăng tốc về cảng trước giờ đóng, có thể chốt chuyến cuối ngẫu nhiên (auto_tangtoc_tienvuc)</span></label>
+        {{end}}
+        {{if $open.auto_luanhoi}}
+        <label class="sw"><input type="hidden" name="shown_auto_luanhoi" value="1"><input type="checkbox" name="auto_luanhoi" {{if .M.AutoRebornTrial}}checked{{end}}><i></i><span>Tự chơi Luân Hồi Bí Cảnh — xe thư thương cả ngày khi vòng chiến mở (10:00–22:00), tự mua gói free/QC/tiên ngọc trong hạn, không tốn item, không đánh trận bang thay</span></label>
+        {{end}}
+        {{if $open.auto_tiencanh}}
+        <label class="sw"><input type="hidden" name="shown_auto_tiencanh" value="1"><input type="checkbox" name="auto_tiencanh" {{if .M.AutoTienCanh}}checked{{end}}><i></i><span>Tự chơi Tiên Cảnh Vị Ương — cuốc bản đồ giờ khám phá (10:00–22:00), tự tưới cây bang, tự mua gói free/QC/tiên ngọc trong hạn, không bao giờ cắn item thể lực, không đánh trận bang thay</span></label>
+        {{end}}
+        {{if $open.auto_thuongminh}}
+        <label class="sw"><input type="hidden" name="shown_auto_thuongminh" value="1"><input type="checkbox" name="auto_thuongminh" {{if .M.AutoSeaWar}}checked{{end}}><i></i><span>Tự chơi Thương Minh Yêu Vực — chạy free, rèn bảo thạch ưu tiên sát thương cuối, không bao giờ dùng vật phẩm thể lực, không đánh chiến bang thay</span></label>
+        {{end}}
+        <h2 style="margin-top:14px">🤝 Uỷ thác chạy event (theo từng acc)</h2>
+        <div><label>Chat id leader được uỷ thác</label><input type="text" name="deputy_of" value="{{.M.DeputyOf}}" placeholder="để trống = không uỷ thác" autocomplete="off"></div>
+        <p class="small">Cho MỘT leader khác (nhập chat id) thấy acc này ở tab Sự Kiện của họ: force login/logout + gửi lệnh event được, không cần biết mật khẩu, không thấy ở tab Đệ Tử của họ. Mỗi lần leader đó đăng nhập, BẠN (chủ acc) nhận thông báo. Để trống = tắt.</p>
+        <h2 style="margin-top:14px">Lịch biểu</h2>
+        <div class="grid">
+          <div><label>Bật chuột</label><input type="text" name="schedule_start_chuot" value="{{schedIn .M.ChuotStartSchedule}}" placeholder="VD: 6:00, 18:00 — trống = tắt"></div>
+          <div><label>Tắt chuột</label><input type="text" name="schedule_stop_chuot" value="{{schedIn .M.ChuotStopSchedule}}" placeholder="VD: 22:30 — trống = tắt"></div>
+          <div><label>Đăng nhập</label><input type="text" name="schedule_login" value="{{schedIn .M.LoginSchedule}}" placeholder="VD: 6:05 — trống = tắt"></div>
+          <div><label>Đăng xuất</label><input type="text" name="schedule_logout" value="{{schedIn .M.LogoutSchedule}}" placeholder="VD: 23:00 — trống = tắt"></div>
+        </div>
+        <div class="btns" style="margin-top:12px">
+          <button type="submit">Lưu cấu hình</button>
+          <button class="sec mini" type="button" onclick="cfgToggle('{{.M.ID}}')">Thu gọn</button>
+        </div>
+        <p class="small">Đổi tên / server phải đăng nhập lại mới áp dụng (mật khẩu áp ngay); ngưỡng áp ngay nếu đang treo; chuột tự động có hiệu lực từ lần đăng nhập sau.</p>
+      </form>
+    </div>
+    <span class="pill rpill {{if .Running}}on{{else}}off{{end}}" data-acc="{{.M.ID}}" data-on="ĐANG CHẠY" data-off="NGƯNG">{{if .Running}}ĐANG CHẠY{{else}}NGƯNG{{end}}</span>
+  </div>
+  {{end}}
+  {{end}}
+</div>
+
+<script>
+// Compact row layout: the new password is asked in a small dialog instead of
+// living in a permanent input that would blow up the row width.
+function askPw(id, name) {
+  var p = prompt('Mật khẩu mới cho ' + name + ' (#' + id + '):');
+  if (p === null || p === '') return;
+  var i = document.getElementById('pwi-' + id);
+  i.value = p;
+  i.form.submit();
+}
+
+// Giftcode for one member (leader rights the VIP like /redeem on Telegram).
+// Reload on purpose: the row's VIP line must repaint from the database.
+function askCode(id, name) {
+  var c = prompt('Mã giftcode nạp cho ' + name + ' (#' + id + '):');
+  if (c === null || c.trim() === '') return;
+  var i = document.getElementById('code-' + id);
+  i.value = c.trim();
+  i.form.submit();
+}
+
+// Expandable per-member config panels. Which panels are open is kept in
+// sessionStorage so the flash-redirect after a save re-opens exactly the
+// panel the leader was editing (and only that one, on other tabs too).
+function cfgSet() {
+  try { return new Set(JSON.parse(sessionStorage.getItem('tytdCfgOpen') || '[]')); }
+  catch (e) { return new Set(); }
+}
+function cfgStore(set) {
+  try { sessionStorage.setItem('tytdCfgOpen', JSON.stringify(Array.from(set))); } catch (e) {}
+}
+function cfgOpen(id, on) {
+  var f = document.getElementById('cfg-' + id), b = document.getElementById('cfb-' + id);
+  if (!f) return;
+  f.hidden = !on;
+  if (b) {
+    b.textContent = on ? 'Thu gọn ▴' : 'Cấu hình ▾';
+    b.setAttribute('aria-expanded', on ? 'true' : 'false');
+  }
+  var set = cfgSet();
+  if (on) set.add(String(id)); else set.delete(String(id));
+  cfgStore(set);
+}
+function cfgToggle(id) {
+  var f = document.getElementById('cfg-' + id);
+  if (f) cfgOpen(id, f.hidden);
+}
+function cfgAll(on) {
+  document.querySelectorAll('form.mcfg').forEach(function (f) {
+    cfgOpen(f.id.slice(4), on);
+  });
+}
+(function () {
+  var set = cfgSet();
+  document.querySelectorAll('form.mcfg').forEach(function (f) {
+    if (set.has(f.id.slice(4))) cfgOpen(f.id.slice(4), true);
+  });
+})();
+
+// Live per-member switches (data-live + data-flip): layout.html's shared SSE
+// frame carries no per-member switch truth, so the clicked button repaints
+// here after the server confirms ok — label, colour and the next submitted
+// feat stay honest without a page reload. The mapping is exactly what this
+// page's template would have rendered on a classic reload; chatcay is the
+// 3-state cycle (TẮT → BẬT → BẬT+đấu pháp → TẮT), the rest pure flips.
+window.addEventListener('tytd:live', function (ev) {
+  var j = ev.detail.json, f = ev.detail.form;
+  if (!j.ok) return;
+  // Saved config panel (no reload anymore): wipe the just-saved new password
+  // from the form so it doesn't linger on screen or re-submit on next save.
+  if (f.classList.contains('mcfg')) {
+    var pw = f.querySelector('input[name="password"]');
+    if (pw) pw.value = '';
+    return;
+  }
+  if (!f.hasAttribute('data-flip')) return;
+  var feat = f.querySelector('input[name="feat"]'), btn = f.querySelector('button');
+  if (!feat || !btn) return;
+  var name = f.getAttribute('data-flip'), v = feat.value, m;
+  if (v.indexOf('chatcay_') === 0) {
+    m = v === 'chatcay_on' ? ['Chặt cây: BẬT', 'danger', 'chatcay_xave_on']
+      : v === 'chatcay_xave_on' ? ['Chặt + đấu pháp', 'danger', 'chatcay_off']
+      : ['Chặt cây: TẮT', 'g', 'chatcay_on'];
+  } else {
+    var on = /_on$/.test(v);
+    m = [name + ': ' + (on ? 'BẬT' : 'TẮT'), on ? 'danger' : 'g',
+         v.replace(/_(on|off)$/, on ? '_off' : '_on')];
+  }
+  btn.textContent = m[0];
+  btn.className = m[1] + ' mini';
+  feat.value = m[2];
+});
+</script>
+{{end}}

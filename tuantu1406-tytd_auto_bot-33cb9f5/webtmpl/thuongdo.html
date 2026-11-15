@@ -1,0 +1,205 @@
+{{define "content"}}
+{{/* Thương Đồ mini app: read-only sky-trade board drawn from the game's own
+     art. The node graph (bg2.jpg, 15 port palaces, route lattice) is baked
+     once; live frames carry other players' caravans as boats at leg
+     midpoints — with only per-tick positions the page interpolates from the
+     PREVIOUS sighting to the new one (never extrapolates), so boats glide
+     instead of jumping. No orders exist server-side for this board. */}}
+<div class="tw-app">
+  <div class="tw-top">
+    <b>Thương Đồ Tiên Vực</b>
+    <span id="tw-status" class="tw-status">đang tải thương đồ…</span>
+  </div>
+  <div class="tw-stage" id="tw-stage">
+    <div class="tw-cam" id="tw-cam">
+      <canvas id="tw-c1"></canvas>
+      <canvas id="tw-co"></canvas>
+    </div>
+    <div class="tw-zoom">
+      <button type="button" id="tw-zin" title="Phóng to">+</button>
+      <button type="button" id="tw-zout" title="Thu nhỏ">−</button>
+      <button type="button" id="tw-fit" title="Vừa khung">⤢</button>
+    </div>
+    <div class="tk-pop tw-pop" id="tw-pop" style="display:none"></div>
+  </div>
+</div>
+
+<script src="/webstatic/appkit.js"></script>
+<style>
+.tw-app{position:fixed;inset:0;background:#0a0e18}
+.tw-top{position:absolute;top:calc(env(safe-area-inset-top) + 6px);left:8px;right:76px;z-index:6;
+  display:flex;align-items:center;gap:8px;padding:5px 10px;color:#ebebeb;font-size:14px;
+  background:rgba(10,14,24,.55);border:1px solid rgba(60,80,105,.4);border-radius:10px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
+.tw-status{margin-left:auto;font-size:11px;color:#8fa2b5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tw-stage{position:absolute;inset:0;overflow:hidden;touch-action:none}
+.tw-cam{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.tw-cam canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.tw-zoom{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 44px);display:flex;flex-direction:column;gap:6px;z-index:5}
+.tw-zoom button{width:36px;height:36px;border-radius:8px;border:0;background:#1b2433;color:#dfe8f2;font-size:18px;line-height:1}
+.tw-pop{position:absolute;z-index:9;min-width:170px;max-width:74%;background:rgba(13,19,30,.97);
+  border:1px solid #2c3a4e;border-radius:10px;padding:9px 11px;color:#dfe8f2;font-size:13px}
+.tw-pop b{display:block;margin-bottom:3px}
+.tw-pop .o{color:#9fb2c6;font-size:12px}
+</style>
+
+<script>
+var TD_CSRF = '{{.CSRF}}';
+var TD_ART = function (p) { return '/events/mapart?b=st&p=' + encodeURIComponent(p); };
+var tdSt = null, tdImgs = {}, tdFrame = null;
+var tdStage, tdCam, tdC1, tdCo, tdCamK;
+var tdShips = {}, tdLastAt = 0;   // id → {x,y} last sighting; boats tween to the newest
+var tdPopFor = null;
+
+function tdBoot() {
+  TK.fetchJSON('/events/mapstatic?which=thuongdo')
+    .then(function (st) {
+      tdSt = st;
+      var urls = [TD_ART(st.bg)];
+      st.cities.forEach(function (c) { if (c.icon && urls.indexOf(TD_ART(c.icon)) < 0) urls.push(TD_ART(c.icon)); });
+      for (var lv = 1; lv <= 5; lv++) urls.push(TD_ART('images/boat/' + lv + '.png'));
+      return TK.preload(urls);
+    })
+    .then(function (m) {
+      tdImgs = m;
+      tdResize();
+      tdBake();
+      TK.heartbeat('thuongdo');
+      tkStatus('trực tiếp · đang chờ khung hình…');
+      requestAnimationFrame(tdLoop);
+    })
+    .catch(function () { tkStatus('không tải được thương đồ (binary cũ? khởi động lại bot)'); });
+}
+function tkStatus(t) { var el = document.getElementById('tw-status'); if (el) el.textContent = t; }
+
+function tdResize() {
+  TK.fitStageFill(tdStage, tdCam, tdSt.aspect); // fill the screen, pan to see the rest
+  tdCamK.clamp(); tdCamK.apply();
+}
+
+// Static bake: backdrop, route lattice, port palaces + numbers.
+function tdBake() {
+  var W = Math.max(1, tdCam.clientWidth), H = Math.max(1, tdCam.clientHeight);
+  TK.setSize(tdC1, W, H); TK.setSize(tdCo, W, H);
+  var c = tdC1.getContext('2d');
+  c.fillStyle = '#0a0e18'; c.fillRect(0, 0, W, H);
+  var bg = tdImgs[TD_ART(tdSt.bg)];
+  if (bg) c.drawImage(bg, 0, 0, W, H);
+  var pos = {};
+  tdSt.cities.forEach(function (p) { pos[p.id] = p; });
+  c.strokeStyle = 'rgba(200,220,255,.5)'; c.lineWidth = Math.max(1, W / 1200);
+  (tdSt.links || []).forEach(function (lk) {
+    var a = pos[lk[0]], b = pos[lk[1]];
+    if (!a || !b) return;
+    c.beginPath(); c.moveTo(a.x * W, a.y * H); c.lineTo(b.x * W, b.y * H); c.stroke();
+  });
+  var small = Math.max(10, Math.round(W / 110));
+  c.font = 'bold ' + small + 'px system-ui, sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  tdSt.cities.forEach(function (p) {
+    if (!p.icon) return;
+    var im = tdImgs[TD_ART(p.icon)];
+    var w = p.w * W, h = p.h * H;
+    if (im) c.drawImage(im, p.x * W - w / 2, p.y * H - h / 2, w, h);
+    c.fillStyle = 'rgba(8,12,20,.78)';
+    c.fillRect(p.x * W - small * 0.8, p.y * H - h / 2 - small * 1.5, small * 1.6, small * 1.2);
+    c.fillStyle = '#ffd76e';
+    c.fillText(p.lab, p.x * W, p.y * H - h / 2 - small * 0.9);
+  });
+}
+
+// ---- live frames --------------------------------------------------------------
+TK.mapFrame('thuongdo', function (f) {
+  tdFrame = f;
+  TK.status(document.getElementById('tw-status'), f, 'thương đồ · ');
+  if (f.idle || f.err) { tdShips = {}; return; }
+  tdLastAt = TK.clock();
+  var seen = {};
+  (f.cities || []).forEach(function (c) {
+    if (c.id < 30000) { c._live = true; seen[c.id] = true; return; }
+    var s = tdShips[c.id];
+    if (!s) s = tdShips[c.id] = { x: c.x, y: c.y };
+    s.px = s.x; s.py = s.y;           // tween start = previous sighting
+    s.x = c.x; s.y = c.y;
+    s.c = c;
+  });
+  Object.keys(tdShips).forEach(function (id) { if (!seen[id]) delete tdShips[id]; });
+  if (tdPopFor) tdPopRender();
+});
+
+// ---- animation: tween boats between sightings ---------------------------------
+function tdLoop() {
+  requestAnimationFrame(tdLoop);
+  if (document.hidden || !tdSt) return;
+  var W = tdCo.width, H = tdCo.height, c = tdCo.getContext('2d');
+  c.clearRect(0, 0, W, H);
+  var span = Math.min(4500, 5000), t = Math.min(1, (TK.clock() - tdLastAt) / span);
+  Object.keys(tdShips).forEach(function (id) {
+    var s = tdShips[id], cc = s.c;
+    if (!cc) return;
+    var x = (s.px != null ? s.px + (s.x - s.px) * t : s.x) * W;
+    var y = (s.py != null ? s.py + (s.y - s.py) * t : s.y) * H;
+    var im = tdImgs[TD_ART(cc.icon)];
+    var w = (cc.w || 0.08) * W;
+    if (im) c.drawImage(im, x - w / 2, y - w / 2, w, (cc.h || 0.08) * W);
+    else { c.fillStyle = '#f2d98c'; c.beginPath(); c.arc(x, y, Math.max(3, w / 6), 0, 6.2832); c.fill(); }
+    var lab = cc.name || '';
+    if (cc.color) { c.fillStyle = cc.color; c.beginPath(); c.arc(x, y - w * 0.62, Math.max(2, w / 12), 0, 6.2832); c.fill(); }
+    if (lab) {
+      var fs = Math.max(10, W / 110);
+      c.font = fs + 'px system-ui, sans-serif'; c.textAlign = 'center';
+      var tw = c.measureText(lab).width;
+      c.fillStyle = 'rgba(8,12,20,.72)';
+      c.fillRect(x - tw / 2 - 4, y - w * 0.7 - fs - 6, tw + 8, fs + 5);
+      c.fillStyle = '#ebebeb'; c.fillText(lab, x, y - w * 0.7 - 7);
+    }
+  });
+}
+
+// ---- popup: text-only inspector -----------------------------------------------
+function tdClosePop() { tdPopFor = null; document.getElementById('tw-pop').style.display = 'none'; }
+function tdPopRender() {
+  var pop = document.getElementById('tw-pop'), hit = tdPopFor;
+  pop.innerHTML = '';
+  var live = null;
+  if (tdFrame && tdFrame.cities) tdFrame.cities.forEach(function (c) { if (c.id === hit.id) live = c; });
+  TK.popHead(pop, {
+    img: hit.icon ? TD_ART(hit.icon) : null,
+    name: hit.name || ('Cổng ' + hit.lab),
+    owner: live && live.owner, color: live && live.color,
+    fight: live && live.fight,
+    sub: (live && live.info) || 'đang trống',
+  });
+}
+function tdTap(e) {
+  var nrm = TK.normOf(e, tdCam);
+  if (!nrm) { tdClosePop(); return; }
+  var W = tdCam.clientWidth, H = tdCam.clientHeight;
+  var it = TK.nearestBox(nrm.x, nrm.y, tdSt.cities, 0.045, 0.055, 0.06);
+  if (!it) { tdClosePop(); return; }
+  tdPopFor = it;
+  tdPopRender();
+  var pop = document.getElementById('tw-pop');
+  pop.style.display = 'block';
+  TK.placePop(pop, tdStage, tdCam, it.x, it.y);
+  TK.haptic('light');
+}
+
+tdStage = document.getElementById('tw-stage');
+tdCam = document.getElementById('tw-cam');
+tdC1 = document.getElementById('tw-c1'); tdCo = document.getElementById('tw-co');
+tdCamK = TK.cam(tdStage, tdCam, { exclude: '.tw-pop,.tw-zoom', change: function () { if (tdPopFor) TK.placePop(document.getElementById('tw-pop'), tdStage, tdCam, tdPopFor.x, tdPopFor.y); } });
+tdCamK.onTap(tdTap);
+document.getElementById('tw-zin').addEventListener('click', function (e) {
+  e.stopPropagation(); tdCamK.zoomAt(tdStage.clientWidth / 2, tdStage.clientHeight / 2, 1.5);
+});
+document.getElementById('tw-zout').addEventListener('click', function (e) {
+  e.stopPropagation(); tdCamK.zoomAt(tdStage.clientWidth / 2, tdStage.clientHeight / 2, 1 / 1.5);
+});
+document.getElementById('tw-fit').addEventListener('click', function (e) {
+  e.stopPropagation(); tdCamK.reset();
+});
+window.addEventListener('resize', function () { if (tdSt) { tdResize(); tdBake(); } });
+tdBoot();
+</script>
+{{end}}

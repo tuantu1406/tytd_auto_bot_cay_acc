@@ -1,0 +1,52 @@
+{{define "content"}}
+<div class="card">
+  <h1>Cài đặt treo máy</h1>
+  <form method="post" action="/settings" data-live="1">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <div class="grid">
+      <div>
+        <label>Đạo hữu tối thiểu để auto chuột (min_dao)</label>
+        <input type="number" name="min_dao" min="0" value="{{.User.MinPeachLevel}}">
+      </div>
+      <div>
+        <label>Level bình tối thiểu (min_binh)</label>
+        <input type="number" name="min_binh" min="0" value="{{.User.MinBottleLevel}}">
+      </div>
+      <div>
+        <label>Lưu ly tối thiểu (min_luuly)</label>
+        <input type="number" name="min_luuly" min="0" value="{{.User.MinLuuLyLevel}}">
+      </div>
+      <div>
+        <label>Thu nhập Tụ Linh tối thiểu (min_tuling)</label>
+        <input type="number" name="min_tuling" min="0" value="{{.User.MinGatherIncome}}">
+      </div>
+    </div>
+    <label class="sw" style="margin-top:14px"><input type="checkbox" name="bottle_pref" {{if .User.BottlePrefered}}checked{{end}}><i></i><span>Ưu tiên bình (bottle_pref)</span></label>
+    <p class="small" style="margin:2px 0 0">⚠️ Chỉ bật khi <b>full chuột</b> và ở <b>server cũ</b>.</p>
+    <label class="sw"><input type="checkbox" name="auto_login" {{if .User.AutoLogin}}checked{{end}}><i></i><span>Tự đăng nhập khi bot khởi động (auto_login)</span></label>
+    <label class="sw"><input type="checkbox" name="auto_start_chuot" {{if .User.AutoMouse}}checked{{end}}><i></i><span>Tự bật chuột khi vào game (auto_start_chuot)</span></label>
+    <label class="sw"><input type="checkbox" name="tu_linh" {{if .User.AutoGather}}checked{{end}}><i></i><span>Tự động thu năng lượng Tụ Linh (vĩnh viễn)</span></label>
+    <p class="small" style="margin:14px 0 2px">⚙️ Sự kiện — chỉ hiện cấu hình của sự kiện <b>đang mở</b> trên server (bot nghe ActList của các acc đang treo; chưa có acc nào online thì ẩn hết).</p>
+    {{if .Data.Open.auto_thiendo}}
+    <label class="sw"><input type="hidden" name="shown_auto_thiendo" value="1"><input type="checkbox" name="auto_thiendo" {{if .User.AutoSkyTrade}}checked{{end}}><i></i><span>Tự chạy thuyền Tiên Vực Thương Đồ — mua/bán, chỉ ra khơi khi thấy chuyến có lời (auto_thiendo_tienvuc)</span></label>
+    {{end}}
+    {{if .Data.Open.auto_thiendo_toc}}
+    <label class="sw"><input type="hidden" name="shown_auto_thiendo_toc" value="1"><input type="checkbox" name="auto_thiendo_toc" {{if .User.AutoSkyTradeSpeed}}checked{{end}}><i></i><span>Tự tăng tốc tiến độ Thiên Vực — 21:58 dùng giấy tăng tốc cho thuyền về cảng kịp giờ đóng (22:00), rồi bán/mua/chạy tiếp; nếu hết giờ mà chưa có chuyến lời, bot mua đặc sản của cảng và dong buồm tới cảng ngẫu nhiên chờ giá mai (auto_tangtoc_tienvuc)</span></label>
+    {{end}}
+    {{if .Data.Open.auto_luanhoi}}
+    <label class="sw"><input type="hidden" name="shown_auto_luanhoi" value="1"><input type="checkbox" name="auto_luanhoi" {{if .User.AutoRebornTrial}}checked{{end}}><i></i><span>Tự chơi Luân Hồi Bí Cảnh — chạy xe thư thương CẢ NGÀY khi vòng chiến mở (10:00–22:00, tự đúng giờ mở và chạy nốt trước 21:56), khám sự kiện, bái, thu quả + nước cây bang, nhận quà dự đoán, tự mua gói miễn phí / xem quảng cáo / gói tiên ngọc trong giới hạn ngày; không tốn item, không đánh trận bang thay</span></label>
+    {{end}}
+    {{if .Data.Open.auto_tiencanh}}
+    <label class="sw"><input type="hidden" name="shown_auto_tiencanh" value="1"><input type="checkbox" name="auto_tiencanh" {{if .User.AutoTienCanh}}checked{{end}}><i></i><span>Tự chơi Tiên Cảnh Vị Ương — cuốc bản đồ trong giờ khám phá (10:00–22:00): phá sương, đánh quái, giải sự kiện, bái, mở rương tầng, tự tưới cây bang bằng đủ mọi chai nước đang có, nhận quà bang, tự mua gói miễn phí / xem quảng cáo / gói tiên ngọc trong giới hạn ngày; KHÔNG bao giờ cắn item tăng thể lực, không đánh trận bang thay</span></label>
+    {{end}}
+    {{if .Data.Open.auto_thuongminh}}
+    <label class="sw"><input type="hidden" name="shown_auto_thuongminh" value="1"><input type="checkbox" name="auto_thuongminh" {{if .User.AutoSeaWar}}checked{{end}}><i></i><span>Tự chơi Thương Minh Yêu Vực — chạy free: khám phá, giải sự kiện, bái, hỗ trợ đồng đội, phúc lợi bang, rèn bảo thạch ưu tiên sát thương cuối, tự mua gói free/QC/tiên ngọc trong hạn; KHÔNG bao giờ dùng vật phẩm thể lực (chỉ nút /thuongminh_suc), không đánh chiến bang thay (auto_thuongminh)</span></label>
+    {{end}}
+    <h2 style="margin-top:16px">🤝 Uỷ thác chạy event</h2>
+    <div><label>Chat id leader được uỷ thác</label><input type="text" name="deputy_of" value="{{.User.DeputyOf}}" placeholder="VD: 787613537 — để trống = không uỷ thác" autocomplete="off"></div>
+    <p class="small">Để trống = không uỷ thác. Điền chat id của MỘT leader khác để cho leader đó thấy acc này ở <b>tab Sự Kiện</b> của họ: họ force login/logout và gửi lệnh event (Côn Lôn, Bồng Lai, Cửu U…) được mà KHÔNG cần biết mật khẩu, KHÔNG thấy acc ở tab Đệ Tử, và không đổi được mật khẩu/cấu hình/xoá acc. Mỗi lần leader đó đăng nhập acc của bạn, bạn nhận thông báo Telegram. Thu hồi bất cứ lúc nào bằng cách xoá trắng ô này (hoặc /bo_uythac).</p>
+    <p style="margin-top:14px"><button type="submit">Lưu</button></p>
+    <p class="small">Ngưỡng và ưu tiên áp dụng ngay nếu đang treo; Tụ Linh (gồm ngưỡng thu nhập — 0 là không giới hạn) áp dụng ngay phút thu tiếp theo; thuyền Thương Đồ tự áp trong phút chạy tiếp theo; chuột tự động có hiệu lực từ lần đăng nhập sau.</p>
+  </form>
+</div>
+{{end}}

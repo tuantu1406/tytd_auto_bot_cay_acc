@@ -1,0 +1,67 @@
+{{define "content"}}
+<div class="card">
+  <h1>Lịch biểu hàng ngày</h1>
+  <p class="small">Mỗi ô: các giờ cách nhau bởi dấu phẩy hoặc dấu cách — dạng H hoặc H:MM (H 0–24, MM 0–59, 24 chỉ dùng 24:00). Để trống hoặc gõ <code>off</code> để xoá lịch. Giờ theo múi Việt Nam (UTC+7).</p>
+  <form method="post" action="/schedules">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label>Bật chuột — hiện tại: {{.Data.StartChuot}}</label>
+    <input type="text" name="schedule_start_chuot" value="{{.User.ChuotStartSchedule}}" placeholder="VD: 6:30, 12, 19:45">
+    <label>Tắt chuột — hiện tại: {{.Data.StopChuot}}</label>
+    <input type="text" name="schedule_stop_chuot" value="{{.User.ChuotStopSchedule}}">
+    <label>Đăng nhập game — hiện tại: {{.Data.Login}}</label>
+    <input type="text" name="schedule_login" value="{{.User.LoginSchedule}}">
+    <label>Đăng xuất game — hiện tại: {{.Data.Logout}}</label>
+    <input type="text" name="schedule_logout" value="{{.User.LogoutSchedule}}">
+    <p style="margin-top:14px"><button type="submit">Lưu lịch</button></p>
+  </form>
+</div>
+
+{{if .IsLeader}}
+<div class="card">
+  <h1>Lịch cho cả bang đệ tử</h1>
+  <p class="small">Áp dụng cùng lúc cho <b>{{.Data.MemberCount}} đệ tử</b> (giống hệt /member_schedule_* trong bot) — hiện tại: bật chuột <b>{{.Data.MemberStartChuot}}</b> · tắt chuột <b>{{.Data.MemberStopChuot}}</b> · đăng nhập <b>{{.Data.MemberLogin}}</b> · đăng xuất <b>{{.Data.MemberLogout}}</b>. Ở bảng này, để trống hoặc gõ <code>off</code> rồi Lưu = XOÁ lịch của tất cả đệ tử; muốn sửa từng acc thì dùng bảng bên dưới.</p>
+  {{if not .Data.MemberCount}}<p class="small err">Chưa có đệ tử nào — thêm ở trang Đệ tử trước.</p>{{end}}
+  <form method="post" action="/schedules">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <input type="hidden" name="member_form" value="1">
+    <label>Bật chuột cho đệ tử</label>
+    <input type="text" name="member_schedule_start_chuot" value="{{.Data.MemberStartChuotRaw}}" placeholder="VD: 6:30, 12, 19:45">
+    <label>Tắt chuột cho đệ tử</label>
+    <input type="text" name="member_schedule_stop_chuot" value="{{.Data.MemberStopChuotRaw}}" placeholder="để trống = xoá lịch">
+    <label>Đăng nhập game cho đệ tử</label>
+    <input type="text" name="member_schedule_login" value="{{.Data.MemberLoginRaw}}" placeholder="VD: 6, 13:30, 21">
+    <label>Đăng xuất game cho đệ tử</label>
+    <input type="text" name="member_schedule_logout" value="{{.Data.MemberLogoutRaw}}" placeholder="VD: 22:30, 23:50">
+    <p style="margin-top:14px"><button type="submit">Lưu lịch đệ tử</button></p>
+  </form>
+</div>
+
+<div class="card">
+  <h1>Lịch cho TỪNG đệ tử</h1>
+  <p class="small">Mỗi dòng một acc, ô đã điền sẵn lịch hiện tại — sửa gì lưu nấy (WYSIWYG). <b>Để trống = xoá lịch</b> của ô đó (khác bảng "cả bang" ở trên: ở đó để trống là bỏ qua). Lưu ý: lịch chuột là TRẠNG THÁI theo khoảng — acc đăng nhập giữa khoảng tắt thì chuột vẫn TẮT tới giờ bật kế tiếp.</p>
+  {{if not .Data.Members}}
+  <p class="small err">Chưa có đệ tử nào — thêm ở trang Đệ tử trước.</p>
+  {{else}}
+  <form method="post" action="/schedules">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <input type="hidden" name="member_form" value="2">
+    <table>
+      <thead><tr><th style="text-align:left">Đệ tử</th><th style="text-align:left">Bật chuột</th><th style="text-align:left">Tắt chuột</th><th style="text-align:left">Đăng nhập</th><th style="text-align:left">Đăng xuất</th></tr></thead>
+      <tbody>
+      {{range .Data.Members}}
+        <tr>
+          <td>{{.Username}}</td>
+          <td><input type="text" name="ms_{{.ID}}_start" value="{{.Start}}" placeholder="trống = xoá"></td>
+          <td><input type="text" name="ms_{{.ID}}_stop" value="{{.Stop}}" placeholder="trống = xoá"></td>
+          <td><input type="text" name="ms_{{.ID}}_login" value="{{.Login}}" placeholder="trống = xoá"></td>
+          <td><input type="text" name="ms_{{.ID}}_logout" value="{{.Logout}}" placeholder="trống = xoá"></td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+    <p style="margin-top:14px"><button type="submit">Lưu lịch từng đệ tử</button></p>
+  </form>
+  {{end}}
+</div>
+{{end}}
+{{end}}

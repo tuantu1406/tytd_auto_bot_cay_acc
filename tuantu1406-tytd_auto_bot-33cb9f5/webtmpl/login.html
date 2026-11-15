@@ -1,0 +1,135 @@
+{{define "login"}}<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0d12">
+<title>Đăng nhập — TYTD Tool</title>
+<style>
+:root{--bg:#0a0d12;--panel:#131a26;--line:#26303f;--tx:#ece4d0;--dim:#93a0b5;
+  --gold:#d4af37;--gold-hi:#f2d98c;--jade:#3fe0a1;--cinnabar:#ff6a5c;
+  --font-d:"Palatino Linotype","Book Antiqua",Palatino,Georgia,"Noto Serif",serif;
+  --font-b:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;color:var(--tx);font:15px/1.55 var(--font-b);
+  display:flex;align-items:center;justify-content:center;padding:24px 16px;
+  background:
+    radial-gradient(1100px 480px at 80% -100px, rgba(212,175,55,.09), transparent 60%),
+    radial-gradient(800px 420px at -10% 110%, rgba(63,224,161,.06), transparent 60%),
+    linear-gradient(180deg,#0d1119, var(--bg) 45%, #090c11);
+  background-attachment:fixed;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="260" height="120" viewBox="0 0 260 120"><g fill="none" stroke="%23d4af37" stroke-opacity="0.05" stroke-width="1.4"><path d="M20 60c0-14 11-25 25-25 3 0 6 1 9 2 4-9 13-15 24-15 14 0 25 11 25 25 10 0 18 8 18 18H20c0-2 0-3 0-5z"/><path d="M160 100c0-11 9-20 20-20 3 0 5 1 8 2 3-7 10-12 19-12 11 0 20 9 20 20 8 0 14 6 14 14h-81z"/></g></svg>') repeat 0 0/260px 120px;
+}
+.card{
+  position:relative;background:linear-gradient(180deg,#171f2f,#121826 60%);
+  border:1px solid var(--line);border-radius:18px;padding:34px 26px 28px;
+  max-width:400px;width:100%;text-align:center;
+  box-shadow:0 24px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.card::before{content:"";position:absolute;left:22px;right:22px;top:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(212,175,55,.6),transparent)}
+.seal{
+  width:64px;height:64px;margin:0 auto 14px;border-radius:16px;position:relative;
+  display:flex;align-items:center;justify-content:center;transform:rotate(-4deg);
+  background:linear-gradient(145deg,#8c2f26,#6d1f1a);
+  border:1px solid rgba(240,212,122,.55);
+  box-shadow:0 6px 18px rgba(0,0,0,.55), inset 0 0 16px rgba(0,0,0,.35);
+  font:700 34px/1 var(--font-d);color:var(--gold-hi);text-shadow:0 2px 3px rgba(0,0,0,.6)}
+h1{font:700 22px/1.25 var(--font-d);letter-spacing:.05em;margin:0 0 4px}
+.tag{font:600 10px/1.5 var(--font-b);letter-spacing:.3em;text-transform:uppercase;color:#9a7b25;margin-bottom:16px}
+.dim{color:var(--dim);font-size:13.5px}
+.flash{padding:9px 12px;border-radius:10px;margin:14px 0 0;border:1px solid var(--line);font-size:13.5px;text-align:left}
+.flash.ok{border-color:rgba(63,224,161,.5);color:var(--jade)}
+.flash.err{border-color:rgba(255,106,92,.55);color:var(--cinnabar)}
+.tg-wrap{margin-top:20px;min-height:56px;display:flex;justify-content:center}
+.tg-wrap>div{transform:scale(1.06)}
+.spinner{display:inline-block;width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-5px;margin-right:9px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.rule{display:flex;align-items:center;gap:10px;margin:22px 0 0;color:#9a7b25;font-size:10.5px;letter-spacing:.25em;text-transform:uppercase}
+.rule::before,.rule::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,.35),transparent)}
+</style>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+<div class="card">
+  <div class="seal">仙</div>
+  <h1>TYTD Tool</h1>
+  <div class="tag">by Đạo Tổ Việt Dart</div>
+  <p class="dim" id="hint">Đang mở bảng điều khiển…</p>
+  <div id="autobox"><span class="spinner"></span><span class="dim">Đang đăng nhập tự động…</span></div>
+  {{if .Msg}}<div class="flash {{.MsgKind}}">{{.Msg}}</div>{{end}}
+  <div class="tg-wrap" id="widgetbox" style="display:none">
+  {{if and .BotUsername .Domain}}
+  {{/* data-redirect-url keeps the callback params snake_case (id, auth_date,
+      hash, …) exactly as the signature over data_check_string expects; the
+      onauth JS object would have been camelCase. */}}
+  <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="{{.BotUsername}}" data-size="large" data-userpic="false" data-radius="12" data-request-data="web" data-redirect-url="https://{{.Domain}}/auth/callback"></script>
+  {{else}}
+  <p class="dim">Web chưa được cấu hình bot/domain đăng nhập — liên hệ admin.</p>
+  {{end}}
+  </div>
+  <div class="rule">Chân Án</div>
+</div>
+<script>
+// Inside Telegram's webview the signed identity is only reachable from JS
+// (Telegram.WebApp.initData) — hand it to the backend, get the session
+// cookie, and go straight to the dashboard. Anything else (plain browser)
+// falls back to the Login Widget button.
+(function () {
+  var wa = window.Telegram && window.Telegram.WebApp;
+  var autobox = document.getElementById('autobox');
+  var widgetbox = document.getElementById('widgetbox');
+  var hint = document.getElementById('hint');
+  var defaultHint = 'Đăng nhập bằng Telegram để quản lý tài khoản{{if .Domain}} trên {{.Domain}}{{end}}.';
+  function showWidget(msg) {
+    autobox.style.display = 'none';
+    widgetbox.style.display = '';
+    if (hint) hint.textContent = msg || defaultHint;
+  }
+  if (!wa || !wa.initData) {
+    showWidget('');
+    return;
+  }
+  wa.ready();
+  try {
+    wa.setHeaderColor && wa.setHeaderColor('#0d1119');
+    wa.setBackgroundColor && wa.setBackgroundColor('#0a0d12');
+  } catch (e) {}
+  // Loop guard: if the session cookie refuses to stick (browser blocks
+  // third-party cookies in the Telegram Web iframe), POSTing again just
+  // bounces / → /login → POST → … and burns the login limiter into a 429.
+  // sessionStorage survives the bounce while cookies do not, so one
+  // auto-attempt per tab: success clears the flag, a bounce back shows the
+  // widget with an honest hint instead of hammering the endpoint.
+  var LOOPKEY = 'tytd_miniapp_login_try';
+  var tried = false;
+  try { tried = sessionStorage.getItem(LOOPKEY) === '1'; } catch (e) {}
+  if (tried) {
+    showWidget('Trình duyệt không lưu được phiên cho trang này — hãy bật cookie cho trang rồi mở lại từ bot.');
+    try { sessionStorage.removeItem(LOOPKEY); } catch (e) {}
+    return;
+  }
+  try { sessionStorage.setItem(LOOPKEY, '1'); } catch (e) {}
+  fetch('/miniapp/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'init_data=' + encodeURIComponent(wa.initData),
+    credentials: 'same-origin'
+  }).then(function (res) {
+    // Success KEEPS the flag: the real Telegram Web failure mode is POST ok
+    // + cookie silently dropped → / bounces back here; the surviving flag
+    // turns that bounce into the widget hint instead of a POST storm.
+    // A fresh app open is a fresh iframe context (empty sessionStorage),
+    // so the next genuine open still auto-tries.
+    if (res.ok) { location.replace('/'); return; }
+    try { sessionStorage.removeItem(LOOPKEY); } catch (e) {}
+    return res.text().then(function (t) { showWidget(''); var f = document.querySelector('.flash'); if (!f) { f = document.createElement('div'); f.className = 'flash err'; autobox.parentNode.insertBefore(f, autobox); } f.textContent = t; });
+  }).catch(function () { try { sessionStorage.removeItem(LOOPKEY); } catch (e) {} showWidget(''); });
+})();
+</script>
+</body>
+</html>{{end}}

@@ -1,0 +1,471 @@
+{{define "content"}}
+{{/* Cửu U (Holy Land) mini app — the Go compositor (renderHolyLand) replayed
+     in canvas from the scene bundle at /events/mapart?b=hl&p=scene.json.
+     Layer stack mirrors the client: c1 = 5×2 island grid (bake),
+     ct = ownership painting (roads + footprint plates + owner text, one
+     repaint per SSE frame), c2 = fortress + nameplate + VN names (bake —
+     static), co = rAF dynamics (fight discs + marching armies interpolated
+     on SERVER clock). Road tint replays the client rule exactly: both
+     endpoints share one union (live ci slot), never raw color equality. */}}
+<div class="cu-app">
+  <div class="cu-top">
+    <b>Cửu U Chí Tôn</b>
+    <span id="cu-status" class="cu-status">đang tải cảnh…</span>
+  </div>
+  <div class="cu-stage" id="cu-stage">
+    <div class="cu-cam" id="cu-cam">
+      <canvas id="cu-c1"></canvas>
+      <canvas id="cu-ct"></canvas>
+      <canvas id="cu-c2"></canvas>
+      <canvas id="cu-co"></canvas>
+    </div>
+    <canvas id="cu-tx"></canvas>
+    <div class="cu-zoom">
+      <button type="button" id="cu-zin" title="Phóng to">+</button>
+      <button type="button" id="cu-zout" title="Thu nhỏ">−</button>
+      <button type="button" id="cu-fit" title="Vừa khung">⤢</button>
+    </div>
+    <div class="cu-hud">
+      <button type="button" id="cu-boost">⚡ Tăng tốc hành quân</button>
+      <button type="button" id="cu-rev">🕊 Hồi sinh miễn phí</button>
+      <button type="button" id="cu-rev-item" class="item" title="Hồi sinh NGAY bằng vật phẩm cho mọi acc sự kiện đang chết ở Cửu U (server tự trừ item hồi sinh — chỉ tốn khi bấm nút này)">❤ Hồi sinh nhanh</button>
+    </div>
+    <div class="tk-pop cu-pop" id="cu-pop" style="display:none"></div>
+  </div>
+</div>
+
+<script src="/webstatic/appkit.js"></script>
+<style>
+.cu-app{position:fixed;inset:0;background:#0a0e18}
+.cu-top{position:absolute;top:calc(env(safe-area-inset-top) + 6px);left:8px;right:76px;z-index:6;
+  display:flex;align-items:center;gap:8px;padding:5px 10px;color:#ebebeb;font-size:14px;
+  background:rgba(10,14,24,.55);border:1px solid rgba(60,80,105,.4);border-radius:10px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
+.cu-status{margin-left:auto;font-size:11px;color:#8fa2b5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cu-stage{position:absolute;inset:0;overflow:hidden;touch-action:none}
+.cu-cam{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.cu-cam canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* Screen-space text layer (kunlun parity): crisp at any zoom, never baked into
+   the cam-scaled canvases, never eats taps. */
+#cu-tx{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;display:block}
+.cu-zoom{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 44px);display:flex;flex-direction:column;gap:6px;z-index:5}
+.cu-zoom button{width:36px;height:36px;border-radius:8px;border:0;background:#1b2433;color:#dfe8f2;font-size:18px;line-height:1}
+/* HUD rides the right rail like Côn Lôn (owner 2026-10-10 "đồng bộ thiết kế"):
+   same column, same gold-edge buttons. */
+.cu-hud{position:absolute;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);display:flex;flex-direction:column;gap:6px;z-index:5}
+.cu-hud button{padding:8px 11px;border-radius:9px;border:1px solid rgba(202,166,74,.45);background:#1b2433;color:#f0e9d8;font-size:12px}
+.cu-hud button:active{transform:scale(.94)}
+.cu-hud button.item{border-color:rgba(255,120,110,.6);color:#ffe0da}
+.cu-pop{position:absolute;z-index:9;min-width:210px;max-width:80%;background:rgba(13,19,30,.97);
+  border:1px solid #2c3a4e;border-radius:10px;padding:9px 11px;color:#dfe8f2;font-size:13px}
+.cu-pop b{display:block;margin-bottom:3px}
+.cu-pop .o{color:#9fb2c6;font-size:12px;margin-bottom:4px}
+.cu-pop .det{color:#8fa2b5;font-size:11px;max-height:22vh;overflow:auto;border-top:1px solid #223047;margin:4px 0;padding-top:4px}
+.cu-pop .det .gi-atk{color:#ef9a9a}.cu-pop .det .gi-def{color:#a5d6a7}
+.cu-pop .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.cu-pop button{padding:6px 10px;border-radius:8px;border:0;background:#27405e;color:#eaf2fb;font-size:12px}
+.cu-pop button.danger{background:#5e2a2a}
+</style>
+
+<script>
+var CU_CSRF = '{{.CSRF}}';
+var CU_ART = function (p) { return '/events/mapart?b=hl&p=' + encodeURIComponent(p); };
+var cuSc = null, cuImgs = {}, cuFrame = null, cuK = 1;
+var cuStage, cuCam, cuC1, cuCt, cuC2, cuCo, cuCamK, cuTx;
+// Screen-space text parity (kunlun #42) + rAF idle-skip (#56): bake-sized
+// canvases must not be cleared+redrawn 60×/s, and no text lives on them.
+var cuAnimDirty = true, cuTpx = 0, cuTox = 0, cuToy = 0;
+function cuPX(x) { return cuTox + x * cuTpx; }
+function cuPY(y) { return cuToy + y * cuTpx; }
+function cuTextSpace() {
+  var W = cuStage.clientWidth, H = cuStage.clientHeight;
+  if (!W || !H) return null;
+  var dpr = window.devicePixelRatio || 1;
+  var bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+  if (cuTx.width !== bw || cuTx.height !== bh) { cuTx.width = bw; cuTx.height = bh; }
+  var c = cuTx.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, W, H);
+  return c;
+}
+var cuPopFor = null, cuDetCache = {};   // cityId → {at, j} 30 s
+var cuTintCache = {};                    // file|color|alpha → canvas
+var cuDisc = null;                       // soft red fight glow (once per k)
+
+function cuBoot() {
+  TK.fetchJSON(CU_ART('scene.json'))
+    .then(function (sc) {
+      cuSc = sc;
+      return TK.preload(sc.assets.map(CU_ART));
+    })
+    .then(function (m) { cuImgs = m; cuResize(); cuBake(); cuBakeTop();
+      TK.heartbeat('cuuu'); requestAnimationFrame(cuLoop); })
+    .catch(function () { tkStatus('không tải được nền Cửu U (binary cũ? khởi động lại bot)'); });
+}
+function tkStatus(t) { var el = document.getElementById('cu-status'); if (el) el.textContent = t; }
+
+function cuResize() {
+  TK.fitStageFill(cuStage, cuCam, cuSc.worldW / cuSc.worldH); // fill the screen, pan to see the rest
+  // One bake at world scale, area-capped (iOS Safari dies past ~16 Mpx).
+  cuK = TK.fitSize(cuSc.worldW, cuSc.worldH, 5000, 14000000);
+  var W = Math.round(cuSc.worldW * cuK), H = Math.round(cuSc.worldH * cuK);
+  [cuC1, cuCt, cuC2, cuCo].forEach(function (cv) { TK.setSize(cv, W, H); });
+  cuDisc = null;
+  cuAnimDirty = true; // setSize wipes the co layer
+  cuCamK.clamp(); cuCamK.apply();
+}
+
+// c1: the 5×2 island grid (unpadded, 750×1800 tiles).
+function cuBake() {
+  var W = cuC1.width, H = cuC1.height, c = cuC1.getContext('2d');
+  c.fillStyle = '#0a0e18'; c.fillRect(0, 0, W, H);
+  var bg = cuSc.bg;
+  if (bg.w > 0 && bg.cols > 0) {
+    bg.files.forEach(function (f, i) {
+      var im = cuImgs[CU_ART(f)]; if (!im) return;
+      var o = i % bg.cols, n = Math.floor(i / bg.cols);
+      c.drawImage(im, (o * bg.w + (bg.px || 0)) * cuK, (n * bg.h + (bg.py || 0)) * cuK, bg.w * cuK, bg.h * cuK);
+    });
+  }
+}
+
+// c2: fortresses + nameplates + place names — all ownership-independent.
+function cuBakeTop() {
+  var c = cuC2.getContext('2d');
+  c.clearRect(0, 0, cuC2.width, cuC2.height);
+  (cuSc.cities || []).forEach(function (v) {
+    var x = v.x * cuK, y = v.y * cuK;
+    if (v.fi >= 0) {
+      var fm = cuSc.forts[v.fi], im = fm && cuImgs[CU_ART(fm.file)];
+      if (im) c.drawImage(im, x - cuSc.fortW * cuK / 2, y - cuSc.fortDy * cuK - cuSc.fortH * cuK / 2,
+        cuSc.fortW * cuK, cuSc.fortH * cuK);
+    }
+    if (cuSc.plate) {
+      var pm = cuImgs[CU_ART(cuSc.plate.file)];
+      if (pm) c.drawImage(pm, x - cuSc.plate.w * cuK / 2, y + 185 * cuK, cuSc.plate.w * cuK, cuSc.plate.h * cuK);
+    }
+    // City NAME is text → cuLoop's screen-space layer (crisp at any zoom).
+  });
+}
+
+// ---- tint cache (mirrors pk.tint: color shape, sprite alpha, global a) ----
+function cuTint(file, hex) {
+  var key = file + '|' + hex;
+  if (cuTintCache[key]) return cuTintCache[key];
+  var im = cuImgs[CU_ART(file)]; if (!im) return null;
+  var cv = document.createElement('canvas');
+  cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+  var g = cv.getContext('2d');
+  g.drawImage(im, 0, 0);
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = hex; g.fillRect(0, 0, cv.width, cv.height);
+  cuTintCache[key] = cv;
+  return cv;
+}
+
+// ---- live ownership layer (one repaint per SSE frame) ----------------------
+TK.mapFrame('cuuu', function (f) {
+  cuFrame = f;
+  cuAnimDirty = true; // names/owner rows/dots ride the co+text layers
+  TK.status(document.getElementById('cu-status'), f, 'trực tiếp · ');
+  cuPaint();
+  if (cuPopFor) cuPopRender();
+});
+
+function cuLiveMap() {
+  var m = {};
+  if (cuFrame && cuFrame.cities) cuFrame.cities.forEach(function (c) { m[c.id] = c; });
+  return m;
+}
+var CU_STONE = '#cfd8e8';
+function cuPaint() {
+  var c = cuCt.getContext('2d');
+  c.clearRect(0, 0, cuCt.width, cuCt.height);
+  var f = cuFrame;
+  if (!f || f.idle || f.err) return;
+  var live = cuLiveMap();
+  // roads: tinted only when BOTH endpoints share one union (ci slot rule)
+  (cuSc.roads || []).forEach(function (r) {
+    var a = live[r.a], b = live[r.b];
+    if (!a || !b || a.ci == null || a.ci < 0 || a.ci !== b.ci) return;
+    var tint = cuTint(r.file, cuSc.palette[a.ci % cuSc.palette.length]);
+    if (!tint) return;
+    c.globalAlpha = 127 / 255;
+    c.drawImage(tint, (r.x - r.w / 2) * cuK, (r.y - r.h / 2) * cuK, r.w * cuK, r.h * cuK);
+    c.globalAlpha = 1;
+  });
+  (cuSc.cities || []).forEach(function (v) {
+    var lc = live[v.id], owned = lc && lc.color;
+    // footprint plate: union tint A178, faint stone A70 when unowned
+    if (v.bi >= 0) {
+      var bm = cuSc.builds[v.bi], tint = cuTint(bm.file, owned ? lc.color : CU_STONE);
+      if (tint) {
+        c.globalAlpha = (owned ? 178 : 70) / 255;
+        c.drawImage(tint, (v.x - cuSc.half + bm.ox) * cuK, (v.y - cuSc.half + bm.oy) * cuK,
+          bm.w * cuK, bm.h * cuK);
+        c.globalAlpha = 1;
+      }
+    }
+    if (!owned || !lc.owner) return;
+    var x = v.x * cuK, y = v.y * cuK;
+    c.fillStyle = lc.color;
+    c.fillRect(x - 91 * cuK, y + 95 * cuK, 30 * cuK, 30 * cuK);   // pennant chip
+    // Owner name → screen-space text layer in cuLoop (was fillText here — mushy at zoom).
+  });
+}
+
+// ---- rAF: fight glow + marching armies -------------------------------------
+function cuDiscImg() {
+  if (cuDisc) return cuDisc;
+  var n = Math.max(8, Math.round(420 * cuK));
+  cuDisc = document.createElement('canvas');
+  cuDisc.width = n; cuDisc.height = n;
+  var g = cuDisc.getContext('2d');
+  var grad = g.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+  grad.addColorStop(0, 'rgba(255,70,85,.5)');
+  grad.addColorStop(.5, 'rgba(255,70,85,.16)');
+  grad.addColorStop(1, 'rgba(255,70,85,0)');
+  g.fillStyle = grad; g.fillRect(0, 0, n, n);
+  return cuDisc;
+}
+function cuLoop() {
+  requestAnimationFrame(cuLoop);
+  if (document.hidden || !cuSc) return;
+  // Idle-skip (kunlun parity): the co layer is bake-sized — only repaint while
+  // a march is actually in flight or something changed (flagged by frame/cam/
+  // bake handlers). Also drives the screen-space text layer.
+  var f = cuFrame;
+  var live = cuLiveMap();
+  var now = TK.clock();
+  var anim = false;
+  if (f && !f.idle && !f.err && f.routes) {
+    for (var ai = 0; ai < f.routes.length; ai++) {
+      var rd = f.routes[ai], rdur = rd.arrive - rd.start;
+      if (rdur > 0) { var rp = (now - rd.start) / rdur; if (rp >= 0 && rp < 1) { anim = true; break; } }
+    }
+  }
+  if (!anim && !cuAnimDirty) return;
+  cuAnimDirty = false;
+  var c = cuCo.getContext('2d');
+  c.clearRect(0, 0, cuCo.width, cuCo.height);
+  var tc = cuTextSpace();
+  if (tc && cuCo.width && cuCam.clientWidth) {
+    cuTpx = cuCamK.s * cuCam.clientWidth / cuCo.width;
+    cuTox = cuCam.offsetLeft + cuCamK.tx;
+    cuToy = cuCam.offsetTop + cuCamK.ty;
+  } else cuTpx = 0;
+  // Static city names paint FIRST — the board's own labels are visible even
+  // while the event feed is idle (they used to live on the c2 bake).
+  if (tc && cuTpx > 0) {
+    tc.textAlign = 'center'; tc.textBaseline = 'middle';
+    var fsN = Math.max(10, Math.round(40 * cuK)) * cuTpx;
+    tc.font = 'bold ' + fsN + 'px system-ui, sans-serif';
+    tc.lineWidth = Math.max(2, fsN * 0.16); tc.strokeStyle = 'rgba(0,0,0,.75)';
+    tc.fillStyle = '#fff';
+    (cuSc.cities || []).forEach(function (v) {
+      if (!v.name) return;
+      var x = cuPX(v.x * cuK), y = cuPY(v.y * cuK + (185 + cuSc.plate.h * 0.66) * cuK);
+      tc.strokeText(v.name, x, y); tc.fillText(v.name, x, y);
+    });
+  }
+  if (!f || f.idle || f.err) return;
+  (cuSc.cities || []).forEach(function (v) {
+    var lc = live[v.id];
+    if (lc && lc.fight) {
+      var d = 420 * cuK;
+      c.drawImage(cuDiscImg(), v.x * cuK - d / 2, (v.y - cuSc.fortDy) * cuK - d / 2, d, d);
+    }
+  });
+  if (tc && cuTpx > 0) { // live rows: owners (march nameplates come below)
+    tc.textAlign = 'center'; tc.textBaseline = 'middle';
+    var fsO = Math.max(9, Math.round(30 * cuK)) * cuTpx;
+    tc.font = fsO + 'px system-ui, sans-serif'; tc.lineWidth = 0;
+    (cuSc.cities || []).forEach(function (v) {
+      var lc = live[v.id];
+      if (!lc || !lc.color || !lc.owner) return;
+      var name = lc.owner.length > 14 ? lc.owner.slice(0, 13) + '…' : lc.owner;
+      tc.fillStyle = lc.color;
+      tc.fillText(name, cuPX(v.x * cuK), cuPY(v.y * cuK + (185 + cuSc.plate.h + 14) * cuK));
+    });
+  }
+  if (!f.routes || !f.routes.length) return;
+  var pos = {};
+  (cuSc.cities || []).forEach(function (v) { pos[v.id] = { x: v.x * cuK, y: v.y * cuK }; });
+  f.routes.forEach(function (r) {
+    var a = pos[r.from], b = pos[r.to];
+    if (!a || !b) return;
+    var dur = r.arrive - r.start;
+    var p = dur > 0 ? (now - r.start) / dur : 1;
+    if (p < 0) p = 0;
+    if (p >= 1) return; // arrived — the city popup is the truth now
+    var x = a.x + (b.x - a.x) * p, y = a.y + (b.y - a.y) * p;
+    // Bồng Lai-style marches (owner 2026-10-24: "chuyển cái đường chạy màu
+    // đỏ/xanh thành mũi tên di chuyển giống bồng lai") — fat soft guide line
+    // from the unit toward its destination + a CHAIN of chevrons flowing
+    // destination-ward (phase on the server-synced TK.clock() so the flow is
+    // continuous), unit colour kept as data. Same geometry as godisland's
+    // liveRoutes draw (bug-4 "để chuỗi mũi tên chạy liên tục").
+    c.globalAlpha = .3; c.strokeStyle = r.color || '#fff'; c.lineWidth = Math.max(4, 6 * cuK);
+    c.beginPath(); c.moveTo(x, y); c.lineTo(b.x, b.y); c.stroke();
+    c.globalAlpha = 1;
+    var dx = b.x - x, dy = b.y - y, len = Math.hypot(dx, dy);
+    if (len > 3) {
+      var ang = Math.atan2(dy, dx);
+      var sp = Math.max(16, 22 * cuK);
+      var sz = Math.max(4.5, 7 * cuK);
+      var phase = (now / 45) % sp; // chevrons slide destination-ward
+      c.fillStyle = r.color || '#fff';
+      for (var dd = phase; dd <= len; dd += sp) {
+        var px = x + Math.cos(ang) * dd, py = y + Math.sin(ang) * dd;
+        c.beginPath();
+        c.moveTo(px + Math.cos(ang) * sz, py + Math.sin(ang) * sz);
+        c.lineTo(px + Math.cos(ang + 2.4) * sz, py + Math.sin(ang + 2.4) * sz);
+        c.lineTo(px + Math.cos(ang - 2.4) * sz, py + Math.sin(ang - 2.4) * sz);
+        c.closePath();
+        c.fill();
+      }
+    }
+    c.fillStyle = r.color || '#fff';
+    c.beginPath(); c.arc(x, y, Math.max(3, 4 * cuK), 0, 6.2832); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 1; c.stroke();
+    if (r.name && tc && cuTpx > 0) {
+      var fs = Math.max(9, Math.round(24 * cuK)) * cuTpx;
+      tc.font = fs + 'px system-ui, sans-serif'; tc.textAlign = 'center'; tc.textBaseline = 'middle';
+      var tw = tc.measureText(r.name).width;
+      var sx = cuPX(x), sy = cuPY(y);
+      tc.fillStyle = 'rgba(8,12,20,.72)';
+      tc.fillRect(sx - tw / 2 - 3, sy - fs - 10 * cuK * cuTpx, tw + 6, fs + 4);
+      tc.fillStyle = '#ebebeb'; tc.fillText(r.name, sx, sy - fs * 0.35 - 9 * cuK * cuTpx);
+    }
+  });
+}
+
+// ---- popup --------------------------------------------------------------------
+function cuClosePop() { cuPopFor = null; document.getElementById('cu-pop').style.display = 'none'; }
+function cuOrder(act, arg, label, noun, confirmMsg) {
+  TK.order({ csrf: CU_CSRF, which: 'cuuu', act: act, arg: arg, label: label, noun: noun || 'mọi acc sự kiện', confirm: confirmMsg });
+}
+function cuBtn(row, text, act, arg, cls, confirmMsg) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.textContent = text;
+  if (cls) b.className = cls;
+  b.addEventListener('click', function () { cuOrder(act, arg, text, null, confirmMsg); });
+  row.appendChild(b);
+}
+function cuCityIcon(id) {
+  var fs = (cuSc && cuSc.forts) || [];
+  for (var i = 0; i < fs.length; i++) if (fs[i].city === id && fs[i].file) return CU_ART(fs[i].file);
+  return null;
+}
+function cuPopRender() {
+  var pop = document.getElementById('cu-pop'), hit = cuPopFor;
+  pop.innerHTML = '';
+  var lc = cuLiveMap()[hit.id];
+  TK.popHead(pop, {
+    img: cuCityIcon(hit.id),
+    name: hit.name || ('Thành ' + hit.id),
+    owner: lc && lc.owner, color: lc && lc.color,
+    fight: lc && lc.fight,
+    sub: lc && lc.owner ? '' : 'Chưa có chủ',
+  });
+  // garrison detail — same endpoint the events card uses, 30 s page cache
+  var det = document.createElement('div');
+  det.className = 'det'; det.textContent = 'đang hỏi quân trong thành…';
+  pop.appendChild(det);
+  var cached = cuDetCache[hit.id];
+  var fillDet = function (j) {
+    if (cuPopFor && cuPopFor.id !== hit.id) return;
+    det.innerHTML = '';
+    function side(title, rows, cls) {
+      if (!rows || !rows.length) return;
+      var h = document.createElement('div');
+      h.textContent = title + ' (' + rows.length + ')';
+      det.appendChild(h);
+      rows.slice(0, 4).forEach(function (p) { // user: list dài quá che map → 4 dòng thôi
+        var li = document.createElement('div');
+        li.className = cls;
+        li.textContent = '• ' + (p.name || '?') + (p.unionName ? (' [' + p.unionName + ']') : (p.npc ? ' [NPC]' : ''));
+        det.appendChild(li);
+      });
+      if (rows.length > 4) {
+        var more = document.createElement('div');
+        more.textContent = '… và ' + (rows.length - 4) + ' người khác';
+        det.appendChild(more);
+      }
+    }
+    if (!j.attackers.length && !j.defenders.length) det.textContent = 'Thành không có quân chốt — chỉ có NPC thủ vệ.';
+    side('⚔ Đang tấn công', j.attackers, 'gi-atk');
+    side('🛡 Đang phòng thủ', j.defenders, 'gi-def');
+  };
+  if (cached && Date.now() - cached.at < 30000) fillDet(cached.j);
+  else fetch('/events/mapcity?which=cuuu&city=' + hit.id, { credentials: 'same-origin' })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error(r.status)); })
+    .then(function (j) { cuDetCache[hit.id] = { at: Date.now(), j: j }; fillDet(j); })
+    .catch(function () { if (cuPopFor && cuPopFor.id === hit.id) det.textContent = 'không lấy được danh sách (acc treo chưa vào trận?)'; });
+
+  var row = document.createElement('div'); row.className = 'row';
+  cuBtn(row, 'Hành quân tới', 'move', hit.id);
+  cuBtn(row, 'Tấn công thành', 'attack', hit.id, 'danger');
+  cuBtn(row, 'Đánh thủ vệ', 'attack_thuve', hit.id);
+  cuBtn(row, 'Treo máy tại đây', 'auto', hit.id, null,
+    'Gửi lệnh "Treo máy đánh thành ' + (hit.name || hit.id) + '" tới mọi acc sự kiện?');
+  cuBtn(row, 'Tắt treo máy', 'auto', 0, null,
+    'Gửi lệnh "Tắt treo máy" tới mọi acc sự kiện?');
+  pop.appendChild(row);
+}
+function cuTap(e) {
+  var nrm = TK.normOf(e, cuCam);
+  if (!nrm) { cuClosePop(); return; }
+  var wx = nrm.x * cuSc.worldW, wy = nrm.y * cuSc.worldH;
+  var best = null, bd = Infinity;
+  (cuSc.cities || []).forEach(function (v) {
+    if (Math.abs(wx - v.x) <= cuSc.half && Math.abs(wy - v.y) <= cuSc.half) {
+      var d = Math.hypot(wx - v.x, wy - v.y);
+      if (d < bd) { best = v; bd = d; }
+    }
+  });
+  if (!best) { cuClosePop(); return; }
+  cuPopFor = best;
+  cuPopRender();
+  var pop = document.getElementById('cu-pop');
+  pop.style.display = 'block';
+  TK.placePop(pop, cuStage, cuCam, best.x / cuSc.worldW, best.y / cuSc.worldH);
+  TK.haptic('light');
+}
+
+cuStage = document.getElementById('cu-stage');
+cuCam = document.getElementById('cu-cam');
+cuC1 = document.getElementById('cu-c1'); cuCt = document.getElementById('cu-ct');
+cuC2 = document.getElementById('cu-c2'); cuCo = document.getElementById('cu-co');
+cuTx = document.getElementById('cu-tx');
+cuCamK = TK.cam(cuStage, cuCam, { max: 8, exclude: '.cu-pop,.cu-zoom,.cu-hud', change: function () {
+  cuAnimDirty = true; // the text layer hangs off the camera
+  if (cuPopFor) TK.placePop(document.getElementById('cu-pop'), cuStage, cuCam, cuPopFor.x / cuSc.worldW, cuPopFor.y / cuSc.worldH);
+} });
+cuCamK.onTap(cuTap);
+document.getElementById('cu-zin').addEventListener('click', function (e) {
+  e.stopPropagation(); cuCamK.zoomAt(cuStage.clientWidth / 2, cuStage.clientHeight / 2, 1.5);
+});
+document.getElementById('cu-zout').addEventListener('click', function (e) {
+  e.stopPropagation(); cuCamK.zoomAt(cuStage.clientWidth / 2, cuStage.clientHeight / 2, 1 / 1.5);
+});
+document.getElementById('cu-fit').addEventListener('click', function (e) {
+  e.stopPropagation(); cuCamK.reset();
+});
+document.getElementById('cu-boost').addEventListener('click', function (e) {
+  e.stopPropagation(); cuOrder('tangtoc', '', 'Tăng tốc hành quân');
+});
+document.getElementById('cu-rev').addEventListener('click', function (e) {
+  e.stopPropagation(); cuOrder('hoisinh', '', 'Hồi sinh miễn phí', 'mọi acc sự kiện',
+    'Hồi sinh MIỄN PHÍ (không dùng vật phẩm) cho mọi acc sự kiện đang chết?');
+});
+document.getElementById('cu-rev-item').addEventListener('click', function (e) {
+  // Owner 2026-10-24: "thêm nút hồi sinh item (cắn item hồi sinh) trên giao diện" —
+  // same act the /cuuu_hoisinh item command uses; TK.order fires straight on tap.
+  e.stopPropagation(); cuOrder('hoisinh_item', '', 'Hồi sinh bằng vật phẩm', 'mọi acc sự kiện',
+    'DÙNG VẬT PHẨM hồi sinh NGAY cho mọi acc sự kiện đang chết ở Cửu U?');
+});
+window.addEventListener('resize', function () { if (cuSc) { cuResize(); cuBake(); cuBakeTop(); cuPaint(); } });
+cuBoot();
+</script>
+{{end}}

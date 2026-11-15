@@ -1,0 +1,1125 @@
+{
+  "source": "mapOut.json",
+  "dimensions": {
+    "row": 24,
+    "col": 49,
+    "tileWidth": 150,
+    "tileHeight": 150,
+    "tileSpaceX": 225,
+    "tileSpaceY": 75
+  },
+  "cityCount": 34,
+  "roadCount": 50,
+  "cities": [
+    {
+      "cityId": 1001,
+      "type": 1,
+      "gid": 1,
+      "extra": 2001,
+      "x": 1958.52,
+      "y": 516.833,
+      "width": 362,
+      "height": 385,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 1002,
+      "type": 1,
+      "gid": 1,
+      "extra": 2002,
+      "x": 2701.15,
+      "y": 620.455,
+      "width": 362,
+      "height": 385,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 1003,
+      "type": 1,
+      "gid": 1,
+      "extra": 2003,
+      "x": 3130,
+      "y": 1001,
+      "width": 362,
+      "height": 385,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 1004,
+      "type": 1,
+      "gid": 1,
+      "extra": 2004,
+      "x": 3418.67,
+      "y": 1502.5,
+      "width": 362,
+      "height": 385,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 1005,
+      "type": 1,
+      "gid": 1,
+      "extra": 2005,
+      "x": 3366.64,
+      "y": 2718.64,
+      "width": 362,
+      "height": 385,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 1006,
+      "type": 1,
+      "gid": 1,
+      "extra": 2006,
+      "x": 2596.67,
+      "y": 2945,
+      "width": 362,
+      "height": 385,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 1007,
+      "type": 1,
+      "gid": 1,
+      "extra": 2007,
+      "x": 984.621,
+      "y": 2925.28,
+      "width": 362,
+      "height": 385,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 1008,
+      "type": 1,
+      "gid": 1,
+      "extra": 2008,
+      "x": 541.5,
+      "y": 2404.5,
+      "width": 362,
+      "height": 385,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 1009,
+      "type": 1,
+      "gid": 1,
+      "extra": 2009,
+      "x": 233,
+      "y": 1903,
+      "width": 362,
+      "height": 385,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 1010,
+      "type": 1,
+      "gid": 1,
+      "extra": 2010,
+      "x": 173.33333,
+      "y": 1384.33,
+      "width": 362,
+      "height": 385,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 1011,
+      "type": 1,
+      "gid": 1,
+      "extra": 2011,
+      "x": 390.06100000000004,
+      "y": 841.55,
+      "width": 362,
+      "height": 385,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 1012,
+      "type": 1,
+      "gid": 1,
+      "extra": 2012,
+      "x": 864,
+      "y": 595,
+      "width": 362,
+      "height": 385,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 2001,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 1807.56,
+      "y": 891.5,
+      "width": 173,
+      "height": 174,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 2002,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 2469.33,
+      "y": 1021,
+      "width": 173,
+      "height": 174,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 2003,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 2876.67,
+      "y": 1399.33,
+      "width": 173,
+      "height": 174,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 2004,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 3061,
+      "y": 1996,
+      "width": 173,
+      "height": 174,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 2005,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 2907.27,
+      "y": 2395.76,
+      "width": 173,
+      "height": 174,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 2006,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 2180.55,
+      "y": 2739.76,
+      "width": 173,
+      "height": 174,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 2007,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 1446.61,
+      "y": 2725.58,
+      "width": 173,
+      "height": 174,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 2008,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 998.909,
+      "y": 2257.33,
+      "width": 173,
+      "height": 174,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 2009,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 711.833,
+      "y": 1899.83,
+      "width": 173,
+      "height": 174,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 2010,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 754,
+      "y": 1481.33,
+      "width": 173,
+      "height": 174,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 2011,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 749.583,
+      "y": 1103.75,
+      "width": 173,
+      "height": 174,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 2012,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 1228.77,
+      "y": 867.379,
+      "width": 173,
+      "height": 174,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 2013,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 1720.5,
+      "y": 1333,
+      "width": 173,
+      "height": 174,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 2014,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 2247.33,
+      "y": 1930,
+      "width": 173,
+      "height": 174,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 2015,
+      "type": 2,
+      "gid": 2,
+      "extra": null,
+      "x": 1450,
+      "y": 1884.5,
+      "width": 173,
+      "height": 174,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 3001,
+      "type": 3,
+      "gid": 3,
+      "extra": null,
+      "x": 2137,
+      "y": 1172.32,
+      "width": 256,
+      "height": 279,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 3002,
+      "type": 3,
+      "gid": 3,
+      "extra": null,
+      "x": 2702.85,
+      "y": 1779.18,
+      "width": 256,
+      "height": 279,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 3003,
+      "type": 3,
+      "gid": 3,
+      "extra": null,
+      "x": 2368.67,
+      "y": 2226.06,
+      "width": 256,
+      "height": 279,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "cityId": 3004,
+      "type": 3,
+      "gid": 3,
+      "extra": null,
+      "x": 1552.67,
+      "y": 2211.33,
+      "width": 256,
+      "height": 279,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 3005,
+      "type": 3,
+      "gid": 3,
+      "extra": null,
+      "x": 1095.2730000000001,
+      "y": 1715.7,
+      "width": 256,
+      "height": 279,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 3006,
+      "type": 3,
+      "gid": 3,
+      "extra": null,
+      "x": 1257.33,
+      "y": 1269,
+      "width": 256,
+      "height": 279,
+      "flipX": true,
+      "flipY": false
+    },
+    {
+      "cityId": 4001,
+      "type": 4,
+      "gid": 4,
+      "extra": null,
+      "x": 1868.64,
+      "y": 1655.82,
+      "width": 712,
+      "height": 644,
+      "flipX": false,
+      "flipY": false
+    }
+  ],
+  "roads": [
+    {
+      "roadId": 1,
+      "connects": [
+        1007,
+        2007
+      ],
+      "gid": 8,
+      "x": 1301.46960606061,
+      "y": 2951.1803030303,
+      "width": 305,
+      "height": 284,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 2,
+      "connects": [
+        2008,
+        2007
+      ],
+      "gid": 9,
+      "x": 1201.560606060606,
+      "y": 2552.8603030303,
+      "width": 455,
+      "height": 449,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 3,
+      "connects": [
+        1008,
+        2008
+      ],
+      "gid": 10,
+      "x": 831.560606060606,
+      "y": 2384.0303030303,
+      "width": 247,
+      "height": 122,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 4,
+      "connects": [
+        2009,
+        2008
+      ],
+      "gid": 11,
+      "x": 872.060606060606,
+      "y": 2123.5303030303,
+      "width": 302,
+      "height": 333,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 5,
+      "connects": [
+        2009,
+        3005
+      ],
+      "gid": 12,
+      "x": 926.893606060606,
+      "y": 1898.0303030303,
+      "width": 199,
+      "height": 132,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 6,
+      "connects": [
+        1009,
+        2009
+      ],
+      "gid": 13,
+      "x": 498.560606060606,
+      "y": 2053.5303030303,
+      "width": 349,
+      "height": 173,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 7,
+      "connects": [
+        2009,
+        2010
+      ],
+      "gid": 14,
+      "x": 614.560606060606,
+      "y": 1758.0303030303,
+      "width": 357,
+      "height": 362,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 8,
+      "connects": [
+        1010,
+        2010
+      ],
+      "gid": 15,
+      "x": 488.393606060606,
+      "y": 1602.5303030303,
+      "width": 404,
+      "height": 145,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 9,
+      "connects": [
+        2011,
+        2010
+      ],
+      "gid": 16,
+      "x": 593.560606060606,
+      "y": 1323.5303030303,
+      "width": 363,
+      "height": 313,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 10,
+      "connects": [
+        1011,
+        2011
+      ],
+      "gid": 17,
+      "x": 584.560606060606,
+      "y": 1057.5303030303,
+      "width": 273,
+      "height": 155,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 11,
+      "connects": [
+        2011,
+        2012
+      ],
+      "gid": 18,
+      "x": 1007.393606060606,
+      "y": 1039.8633030303,
+      "width": 360,
+      "height": 197,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 12,
+      "connects": [
+        1012,
+        2012
+      ],
+      "gid": 19,
+      "x": 1024.560606060606,
+      "y": 825.530303030303,
+      "width": 259,
+      "height": 149,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 13,
+      "connects": [
+        2012,
+        2001
+      ],
+      "gid": 20,
+      "x": 1531.06060606061,
+      "y": 841.030303030303,
+      "width": 454,
+      "height": 192,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 14,
+      "connects": [
+        2001,
+        2002
+      ],
+      "gid": 21,
+      "x": 2148.56060606061,
+      "y": 957.0303030303,
+      "width": 499,
+      "height": 246,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 15,
+      "connects": [
+        2002,
+        2003
+      ],
+      "gid": 22,
+      "x": 2681.06060606061,
+      "y": 1248.0303030303,
+      "width": 392,
+      "height": 310,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 16,
+      "connects": [
+        1003,
+        2003
+      ],
+      "gid": 23,
+      "x": 2990.06060606061,
+      "y": 1294.0303030303,
+      "width": 294,
+      "height": 270,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 17,
+      "connects": [
+        2003,
+        2004
+      ],
+      "gid": 24,
+      "x": 3078.89060606061,
+      "y": 1738.2003030303,
+      "width": 303,
+      "height": 525,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 18,
+      "connects": [
+        1004,
+        2004
+      ],
+      "gid": 25,
+      "x": 3351.56060606061,
+      "y": 1876.0303030302998,
+      "width": 359,
+      "height": 418,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 19,
+      "connects": [
+        2004,
+        2005
+      ],
+      "gid": 26,
+      "x": 3180.09060606061,
+      "y": 2248.6203030303,
+      "width": 462,
+      "height": 351,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 20,
+      "connects": [
+        1005,
+        2005
+      ],
+      "gid": 27,
+      "x": 3075.23060606061,
+      "y": 2602.0303030303,
+      "width": 291,
+      "height": 252,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 21,
+      "connects": [
+        2005,
+        2006
+      ],
+      "gid": 28,
+      "x": 2560.06060606061,
+      "y": 2624.0303030303,
+      "width": 590,
+      "height": 314,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 22,
+      "connects": [
+        1006,
+        2006
+      ],
+      "gid": 29,
+      "x": 2353.89060606061,
+      "y": 2886.3603030303,
+      "width": 268,
+      "height": 151,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 23,
+      "connects": [
+        2007,
+        2006
+      ],
+      "gid": 30,
+      "x": 1824.56060606061,
+      "y": 2931.0303030303,
+      "width": 667,
+      "height": 242,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 24,
+      "connects": [
+        2007,
+        3004
+      ],
+      "gid": 31,
+      "x": 1610.03060606061,
+      "y": 2570.6403030303,
+      "width": 450,
+      "height": 342,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 25,
+      "connects": [
+        2008,
+        3004
+      ],
+      "gid": 32,
+      "x": 1270.06060606061,
+      "y": 2295.0303030303,
+      "width": 377,
+      "height": 162,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 26,
+      "connects": [
+        3005,
+        3004
+      ],
+      "gid": 33,
+      "x": 1302.22760606061,
+      "y": 2051.0303030303,
+      "width": 381,
+      "height": 361,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 27,
+      "connects": [
+        2015,
+        3004
+      ],
+      "gid": 34,
+      "x": 1702.39360606061,
+      "y": 2124.8603030303,
+      "width": 424,
+      "height": 327,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 28,
+      "connects": [
+        2015,
+        4001
+      ],
+      "gid": 35,
+      "x": 1615.40860606061,
+      "y": 1873.3303030303,
+      "width": 177,
+      "height": 122,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 29,
+      "connects": [
+        2010,
+        3005
+      ],
+      "gid": 36,
+      "x": 931.560606060606,
+      "y": 1628.0303030303,
+      "width": 237,
+      "height": 148,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 30,
+      "connects": [
+        3005,
+        3006
+      ],
+      "gid": 37,
+      "x": 1173.060606060606,
+      "y": 1561.5303030303,
+      "width": 446,
+      "height": 347,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 31,
+      "connects": [
+        2011,
+        3006
+      ],
+      "gid": 38,
+      "x": 971.787606060606,
+      "y": 1271.3003030303,
+      "width": 308,
+      "height": 206,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 32,
+      "connects": [
+        2012,
+        3006
+      ],
+      "gid": 39,
+      "x": 1258.06060606061,
+      "y": 1095.2803030303,
+      "width": 376,
+      "height": 294,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 33,
+      "connects": [
+        3006,
+        3001
+      ],
+      "gid": 40,
+      "x": 1663.39360606061,
+      "y": 1140.5303030303,
+      "width": 690,
+      "height": 275,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 34,
+      "connects": [
+        3006,
+        2013
+      ],
+      "gid": 41,
+      "x": 1500.39360606061,
+      "y": 1386.2003030303,
+      "width": 242,
+      "height": 113,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 35,
+      "connects": [
+        2013,
+        4001
+      ],
+      "gid": 42,
+      "x": 1570.06060606061,
+      "y": 1528.5303030303,
+      "width": 264,
+      "height": 209,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 36,
+      "connects": [
+        3001,
+        2013
+      ],
+      "gid": 43,
+      "x": 1938.56060606061,
+      "y": 1331.7003030303,
+      "width": 257,
+      "height": 120,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 38,
+      "connects": [
+        2002,
+        3001
+      ],
+      "gid": 44,
+      "x": 2335.14060606061,
+      "y": 1146.2883030303,
+      "width": 175,
+      "height": 109,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 39,
+      "connects": [
+        3002,
+        3001
+      ],
+      "gid": 45,
+      "x": 2416.56060606061,
+      "y": 1549.8603030303,
+      "width": 412,
+      "height": 526,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 40,
+      "connects": [
+        3002,
+        2003
+      ],
+      "gid": 46,
+      "x": 2778.89060606061,
+      "y": 1631.3603030303,
+      "width": 383,
+      "height": 310,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 41,
+      "connects": [
+        2004,
+        3002
+      ],
+      "gid": 47,
+      "x": 2896.56060606061,
+      "y": 1971.5303030303,
+      "width": 193,
+      "height": 115,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 42,
+      "connects": [
+        3002,
+        3003
+      ],
+      "gid": 48,
+      "x": 2606.23060606061,
+      "y": 2102.3603030303,
+      "width": 269,
+      "height": 338,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 43,
+      "connects": [
+        2014,
+        3002
+      ],
+      "gid": 49,
+      "x": 2459.39060606061,
+      "y": 1906.2003030303,
+      "width": 264,
+      "height": 155,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 44,
+      "connects": [
+        4001,
+        2014
+      ],
+      "gid": 50,
+      "x": 2135.88060606061,
+      "y": 1906.9403030303,
+      "width": 174,
+      "height": 86,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 45,
+      "connects": [
+        3003,
+        2014
+      ],
+      "gid": 51,
+      "x": 2097.56060606061,
+      "y": 2144.2003030303,
+      "width": 419,
+      "height": 257,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 46,
+      "connects": [
+        3004,
+        3003
+      ],
+      "gid": 52,
+      "x": 1914.56060606061,
+      "y": 2380.0303030303,
+      "width": 629,
+      "height": 220,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 47,
+      "connects": [
+        3003,
+        2006
+      ],
+      "gid": 53,
+      "x": 2096.56060606061,
+      "y": 2557.0303030303,
+      "width": 477,
+      "height": 384,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 48,
+      "connects": [
+        3003,
+        2005
+      ],
+      "gid": 54,
+      "x": 2651.56060606061,
+      "y": 2407.8603030303,
+      "width": 341,
+      "height": 123,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 49,
+      "connects": [
+        2015,
+        3005
+      ],
+      "gid": 55,
+      "x": 1302.56060606061,
+      "y": 1867.8603030303,
+      "width": 217,
+      "height": 123,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 50,
+      "connects": [
+        1001,
+        2001
+      ],
+      "gid": 56,
+      "x": 1881.59060606061,
+      "y": 796.363303030303,
+      "width": 119,
+      "height": 196,
+      "flipX": false,
+      "flipY": false
+    },
+    {
+      "roadId": 51,
+      "connects": [
+        1002,
+        2002
+      ],
+      "gid": 57,
+      "x": 2574.89060606061,
+      "y": 890.8633030303,
+      "width": 255,
+      "height": 237,
+      "flipX": false,
+      "flipY": false
+    }
+  ]
+}

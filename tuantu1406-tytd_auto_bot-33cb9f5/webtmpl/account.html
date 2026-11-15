@@ -1,0 +1,31 @@
+{{define "content"}}
+<div class="card">
+  <h1>Tài khoản game</h1>
+  <form method="post" action="/account">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <input type="hidden" name="action" value="set_creds">
+    <label>Tên đăng nhập game</label>
+    <input type="text" name="username" value="{{.User.Username}}" autocomplete="off">
+    {{if .User.IngameName}}<p class="small">Tên trong game: <b>{{.User.IngameName}}</b> (tự cập nhật mỗi lần acc đăng nhập).</p>{{end}}
+    <label>Mật khẩu game <span class="small">(đang ẩn — <a href="#" onclick="var i=document.getElementById('pw');i.type=i.type==='password'?'text':'password';return false;">hiện/ẩn</a>)</span></label>
+    <input type="password" id="pw" name="password" value="{{.User.Password}}" autocomplete="new-password">
+    <label>Server ID</label>
+    <input type="number" name="server_id" value="{{.User.ServerID}}" min="1">
+    <p class="small">Đổi một trong ba mục sẽ yêu cầu chọn lại nhân vật sau khi đăng nhập lại (giống hệt /username, /password, /server_id).</p>
+    <p><button type="submit">Lưu thay đổi</button></p>
+  </form>
+  <p class="small">Đăng nhập / đăng xuất game nằm ở Trang chủ.</p>
+  {{if .User.LeaderID}}<p class="small">Tài khoản này thuộc quản lý của trưởng bang <code>{{.Data.LeaderName}}</code>.</p>{{end}}
+</div>
+
+<div class="card">
+  <h1>Nạp mã VIP</h1>
+  <form method="post" action="/redeem" data-live="1">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label>Giftcode</label>
+    <input type="text" name="code" placeholder="nhập mã…">
+    <p style="margin-top:12px"><button type="submit">Nạp mã</button></p>
+  </form>
+  <p class="small">VIP hiện tại: cấp {{.User.VipLevel}}{{if gt .User.VipLevel 0}} — tới {{.User.VipExpireAt.Format "15:04 02/01/2006"}}{{end}}.</p>
+</div>
+{{end}}

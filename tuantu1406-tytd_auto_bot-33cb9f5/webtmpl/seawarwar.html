@@ -1,0 +1,335 @@
+{{define "content"}}
+{{/* Thương Minh Yêu Vực — chiến trường khiêu chiến mini app. Same
+     compositor family as Luân Hồi (c1 = nền biển tĩnh, c2 = nhà cứ điểm,
+     co = vòng màu + vòng giao tranh, tx = chữ màn hình). Khung cảnh này
+     không có art CDN đã khai thác — mọi thứ vẽ schematic bằng canvas.
+     Frames về qua mapstream which=seawarwar (234931): mỗi nhà = một bang
+     đối thủ, positionRank → ô lưới. Bấm nhà = mở bảng: thủ thành (234936
+     + 234937) + các cú đánh gần đây (push 234932); ⚔️ TẤN CÔNG bắn ngay
+     không hỏi lại — MỌI acc sự kiện đang treo cùng đánh (bang chiến law),
+     không check lượt, máy chủ là trọng tài duy nhất. */}}
+<div class="sw-app">
+  <div class="sw-top">
+    <b>Thương Minh Yêu Vực — chiến trường</b>
+    <span id="sw-status" class="sw-status">đang tải bảng đấu…</span>
+  </div>
+  <div class="sw-stage" id="sw-stage">
+    <div class="sw-cam" id="sw-cam">
+      <canvas id="sw-c1"></canvas>
+      <canvas id="sw-c2"></canvas>
+      <canvas id="sw-co"></canvas>
+    </div>
+    <canvas id="sw-tx"></canvas>
+    <div class="sw-zoom">
+      <button type="button" id="sw-zin" title="Phóng to">+</button>
+      <button type="button" id="sw-zout" title="Thu nhỏ">−</button>
+      <button type="button" id="sw-fit" title="Vừa khung">⤢</button>
+    </div>
+    <div class="tk-pop sw-pop" id="sw-pop" style="display:none"></div>
+  </div>
+</div>
+
+<script src="/webstatic/appkit.js"></script>
+<style>
+.sw-app{position:fixed;inset:0;background:#071018}
+.sw-top{position:absolute;top:calc(env(safe-area-inset-top) + 6px);left:8px;right:76px;z-index:6;
+  display:flex;align-items:center;gap:8px;padding:5px 10px;color:#ebebeb;font-size:14px;
+  background:rgba(7,16,26,.55);border:1px solid rgba(60,90,115,.4);border-radius:10px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
+.sw-status{margin-left:auto;font-size:11px;color:#8fb2c5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sw-stage{position:absolute;inset:0;overflow:hidden;touch-action:none}
+.sw-cam{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.sw-cam canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#sw-tx{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;display:block}
+.sw-zoom{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 44px);display:flex;flex-direction:column;gap:6px;z-index:5}
+.sw-zoom button{width:36px;height:36px;border-radius:8px;border:0;background:#14283a;color:#dfeef8;font-size:18px;line-height:1}
+.sw-pop{position:absolute;z-index:9;min-width:210px;max-width:80%;background:rgba(9,18,28,.97);
+  border:1px solid #2c4257;border-radius:10px;padding:9px 11px;color:#dfeef8;font-size:13px}
+.sw-pop b{display:block;margin-bottom:3px}
+.sw-pop .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.sw-pop button{padding:6px 10px;border-radius:8px;border:0;background:#27505e;color:#eaf8fb;font-size:12px}
+.sw-pop button.danger{background:#5e2a2a}
+.sw-det{font-size:11px;color:#9fc0d6;line-height:1.5;margin:2px 0 4px;word-break:break-word}
+.sw-det div:first-child{color:#cfe8f8}
+</style>
+
+<script>
+var SW_CSRF = '{{.CSRF}}';
+var SW_W = 2000, SW_H = 1200, SW_HW = 200;
+var swFrame = null, swK = 1;
+var swStage, swCam, swC1, swC2, swCo, swCamK, swTx;
+var swAnimDirty = true, swTpx = 0, swTox = 0, swToy = 0;
+var swPopFor = null;
+
+function swStatus(t) { var el = document.getElementById('sw-status'); if (el) el.textContent = t; }
+function swNodes() { return (swFrame && swFrame.sw && swFrame.sw.nodes) || []; }
+function swTextSpace() {
+  var W = swStage.clientWidth, H = swStage.clientHeight;
+  if (!W || !H) return null;
+  var dpr = window.devicePixelRatio || 1;
+  var bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+  if (swTx.width !== bw || swTx.height !== bh) { swTx.width = bw; swTx.height = bh; }
+  var c = swTx.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, W, H);
+  return c;
+}
+
+// c1: static sea canvas — deep gradient + wave lines, baked once per resize.
+function swBakeBg() {
+  var W = swC1.width, H = swC1.height, c = swC1.getContext('2d');
+  var g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0b1d2e'); g.addColorStop(0.6, '#0a1624'); g.addColorStop(1, '#071018');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.strokeStyle = 'rgba(90,150,190,.10)';
+  c.lineWidth = Math.max(1, 2 * swK);
+  for (var y = H * 0.12; y < H; y += H * 0.09) {
+    c.beginPath();
+    for (var x = 0; x <= W; x += W / 24) {
+      var yy = y + Math.sin(x / W * 12.5 + y) * H * 0.012;
+      if (x === 0) c.moveTo(x, yy); else c.lineTo(x, yy);
+    }
+    c.stroke();
+  }
+}
+
+// c2: houses (roof + body + door) — union-tinted, ground shadow underneath.
+var swBakedCount = -1;
+function swHouse(c, x, y, w, color, dark) {
+  var bodyW = w * 0.72, bodyH = w * 0.42, roofH = w * 0.30;
+  var bx = x - bodyW / 2, by = y - bodyH;
+  c.fillStyle = 'rgba(4,10,16,.5)';
+  c.beginPath(); c.ellipse(x, y, w * 0.55, w * 0.09, 0, 0, 6.2832); c.fill();
+  c.fillStyle = dark; c.fillRect(bx, by, bodyW, bodyH);
+  c.strokeStyle = color; c.lineWidth = Math.max(2, 4 * swK);
+  c.strokeRect(bx, by, bodyW, bodyH);
+  c.fillStyle = color;
+  c.beginPath(); c.moveTo(bx - w * 0.06, by); c.lineTo(x, by - roofH); c.lineTo(bx + bodyW + w * 0.06, by); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.85)';
+  c.fillRect(x - bodyW * 0.13, y - bodyH * 0.62, bodyW * 0.26, bodyH * 0.62);
+}
+function swShade(hex) {
+  var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || '');
+  if (!m) return '#16283a';
+  function d(v) { return Math.round(parseInt(v, 16) * 0.45); }
+  return 'rgb(' + d(m[1]) + ',' + d(m[2]) + ',' + d(m[3]) + ')';
+}
+function swBakeHouses() {
+  var c = swC2.getContext('2d');
+  c.clearRect(0, 0, swC2.width, swC2.height);
+  var hw = SW_HW * swK;
+  swNodes().forEach(function (n) {
+    swHouse(c, n.x * swC2.width, n.y * swC2.height, hw, n.color || '#dfe8f2', swShade(n.color));
+  });
+  swBakedCount = swNodes().length;
+}
+
+TK.mapFrame('seawarwar', function (f) {
+  swFrame = f; swAnimDirty = true;
+  if (f && !f.idle && !f.err && f.sw) {
+    swStatus('trực tiếp · ' + (f.sw.nodes || []).length + ' cứ điểm'
+      + (f.sw.free ? ' · lượt miễn phí ' + f.sw.free : ''));
+  } else {
+    swStatus(f && (f.idle || f.err) ? (f.err || 'chưa thấy bảng chiến — acc chưa vào chiến trường?') : 'đang chờ…');
+  }
+  if (swPopFor) swPopRender();
+});
+
+// co: union ring + ready dot + red fight rings.
+function swLoop() {
+  requestAnimationFrame(swLoop);
+  if (document.hidden || !swFrame) return;
+  if (swNodes().length !== swBakedCount) swBakeHouses();
+  if (!swAnimDirty) return;
+  swAnimDirty = false;
+  var c = swCo.getContext('2d');
+  c.clearRect(0, 0, swCo.width, swCo.height);
+  var tc = swTextSpace();
+  if (tc && swCo.width && swCam.clientWidth) {
+    swTpx = swCamK.s * swCam.clientWidth / swCo.width;
+    swTox = swCam.offsetLeft + swCamK.tx;
+    swToy = swCam.offsetTop + swCamK.ty;
+  } else swTpx = 0;
+  var W = swCo.width, H = swCo.height, hw = SW_HW * swK;
+  swNodes().forEach(function (n) {
+    var x = n.x * W, y = n.y * H;
+    c.strokeStyle = n.self ? '#ffec78' : (n.color || '#dfeef8');
+    c.lineWidth = Math.max(2, 5 * swK);
+    c.beginPath(); c.ellipse(x, y, hw * 0.62, hw * 0.16, 0, 0, 6.2832); c.stroke();
+    if (n.ready && !n.self) {
+      c.fillStyle = '#57d98a';
+      c.beginPath(); c.arc(x + hw * 0.42, y - hw * 0.55, Math.max(3, 10 * swK), 0, 6.2832); c.fill();
+    }
+    if (n.atk && n.atk.length) {
+      c.strokeStyle = '#ff4655';
+      c.lineWidth = Math.max(3, 7 * swK);
+      c.beginPath(); c.ellipse(x, y, hw * 0.78, hw * 0.22, 0, 0, 6.2832); c.stroke();
+      c.strokeStyle = 'rgba(255,70,85,.35)';
+      c.lineWidth = Math.max(2, 12 * swK);
+      c.beginPath(); c.ellipse(x, y, hw * 0.78, hw * 0.22, 0, 0, 6.2832); c.stroke();
+    }
+  });
+  if (tc && swTpx > 0) {
+    var fs = Math.max(10, Math.round(30 * swK)) * swTpx;
+    tc.textAlign = 'center'; tc.textBaseline = 'middle';
+    tc.font = 'bold ' + fs + 'px system-ui, sans-serif';
+    tc.lineWidth = Math.max(2, fs * 0.16); tc.strokeStyle = 'rgba(0,0,0,.75)';
+    swNodes().forEach(function (n) {
+      var label = (n.rank ? n.rank + '. ' : '') + n.name + (n.self ? ' (bang bạn)' : '');
+      var sx = swTox + n.x * SW_W * swTpx, sy = swToy + n.y * SW_H * swTpx - swTpx * (SW_HW * 0.95);
+      var tw = tc.measureText(label).width;
+      tc.fillStyle = 'rgba(6,12,20,.72)';
+      tc.fillRect(sx - tw / 2 - 4, sy - fs * 0.8, tw + 8, fs * 1.6);
+      tc.fillStyle = n.self ? '#ffec78' : '#fff';
+      tc.fillText(label, sx, sy);
+      var sub = (n.master ? 'bang chủ ' + n.master + ' · ' : '') + 'sv ' + (n.sv || '?');
+      var fs2 = fs * 0.72; tc.font = fs2 + 'px system-ui, sans-serif';
+      tc.fillStyle = '#bcd8ea';
+      tc.fillText(sub, sx, sy + fs * 1.1);
+      if (n.atk && n.atk.length) {
+        tc.font = 'bold ' + fs2 + 'px system-ui, sans-serif';
+        tc.fillStyle = '#ff6b78';
+        tc.fillText('⚔ ' + n.atk[0].n + ' vừa đánh', sx, sy + fs * 1.9);
+      }
+    });
+  }
+}
+
+// ---- popup --------------------------------------------------------------
+function swClosePop() { swPopFor = null; document.getElementById('sw-pop').style.display = 'none'; }
+function swPopRender() {
+  var pop = document.getElementById('sw-pop'), hit = swPopFor;
+  pop.innerHTML = '';
+  var head = document.createElement('b');
+  head.textContent = (hit.rank ? hit.rank + '. ' : '') + hit.name + (hit.self ? ' — bang của bạn' : '');
+  head.style.color = hit.self ? '#ffec78' : (hit.color || '#fff');
+  pop.appendChild(head);
+  var sub = document.createElement('div'); sub.className = 'sw-pop';
+  sub.style.cssText = 'color:#9fc0d6;font-size:12px;margin-bottom:4px';
+  sub.textContent = 'sv ' + (hit.sv || '?') + (hit.master ? ' · bang chủ ' + hit.master : '')
+    + (hit.ready ? ' · đánh được' : '');
+  pop.appendChild(sub);
+  var det = document.createElement('div'); det.className = 'sw-det';
+  (hit.atk || []).slice(0, 5).forEach(function (a) {
+    var d = document.createElement('div');
+    d.textContent = '⚔ ' + (a.n || '?') + ' đánh (' + swAgo(a.ago) + ')';
+    det.appendChild(d);
+  });
+  var df = document.createElement('div'); df.textContent = '🛡 Thủ: đang lấy…';
+  det.insertBefore(df, det.firstChild);
+  var lh = document.createElement('div');
+  det.insertBefore(lh, df);
+  var od = document.createElement('div');
+  det.insertBefore(od, lh);
+  swDefenders(hit.id, function (names, err, data) {
+    if (swPopFor !== hit) return;
+    data = data || {};
+    df.textContent = err ? ('🛡 ' + err)
+      : (names.length ? ('🛡 Thủ ' + names.length + ': ' + names.slice(0, 6).join(', ') +
+          (names.length > 6 ? ' (+' + (names.length - 6) + ' khác)' : '')) : '🛡 Không thấy ai thủ');
+    var orders = data.orders || [];
+    od.textContent = !orders.length ? '' : ('📜 ' + orders.map(function (o) {
+      var t = o.name + ' — ' + (o.free > 0 ? ('còn ' + o.free + ' lượt free') : 'hết lượt free') +
+        ', đánh được ' + o.targets;
+      if (!o.can && o.note) t += ' (' + o.note + ')';
+      return t;
+    }).join(' · '));
+    // Danh sách lệnh của cứ điểm — dòng ⬛ là acc đã đánh (server tối màu,
+    // bot bỏ qua đúng như client).
+    var lenh = data.lenh || [];
+    lh.textContent = !lenh.length ? '' : ('📋 Lệnh: ' + lenh.map(function (l) {
+      return (l.lit ? '🟩 ' : '⬛ ') + (l.name || '?');
+    }).join(', ') + ' (⬛ = đã đánh)');
+  });
+  pop.appendChild(det);
+  var row = document.createElement('div'); row.className = 'row';
+  if (!hit.self) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'danger'; b.textContent = '⚔️ Tấn công — cả đám đánh';
+    b.addEventListener('click', function () {
+      // Fire on tap — no confirm (no-order-confirm law), no attempt check
+      // (owner 2026-11-11): the server ret is the sole arbiter.
+      TK.order({ csrf: SW_CSRF, which: 'seawarwar', act: 'attack', arg: hit.id,
+        label: 'Tấn công ' + hit.name, noun: 'cả acc sự kiện' });
+    });
+    row.appendChild(b);
+  }
+  pop.appendChild(row);
+}
+function swAgo(s) {
+  if (s == null || isNaN(s)) return '?';
+  if (s < 60) return s + 's trước';
+  if (s < 3600) return Math.round(s / 60) + 'p trước';
+  return Math.round(s / 360) / 10 + 'h trước';
+}
+var swDetCache = { union: 0, t: 0, names: null, pending: [] };
+function swDefenders(union, cb) {
+  var now = Date.now();
+  if (swDetCache.union === union && swDetCache.pending.length) { swDetCache.pending.push(cb); return; }
+  if (swDetCache.union === union && now - swDetCache.t < 30000) { cb(swDetCache.names, null, swDetCache.data); return; }
+  swDetCache = { union: union, t: now, names: null, data: { orders: [], lenh: [] }, pending: [cb] };
+  function settle(names, data, err) {
+    swDetCache.names = names; swDetCache.data = data;
+    if (err) swDetCache.t = 0;
+    var cbs = swDetCache.pending; swDetCache.pending = [];
+    cbs.forEach(function (f) { f(names, err, data); });
+  }
+  fetch('/events/mapcity?which=seawarwar&union=' + union, { credentials: 'same-origin' })
+    .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+    .then(function (j) { settle((j.defenders || []).map(function (d) { return d.name || '?'; }),
+      { orders: j.orders || [], lenh: j.lenh || [] }, null); })
+    .catch(function () { settle([], { orders: [], lenh: [] }, 'không lấy được danh sách thủ (acc chưa vào chiến trường?)'); });
+}
+function swTap(e) {
+  var nrm = TK.normOf(e, swCam);
+  if (!nrm) { swClosePop(); return; }
+  var wx = nrm.x * SW_W, wy = nrm.y * SW_H;
+  var best = null, bd = 1e18;
+  swNodes().forEach(function (n) {
+    var x = n.x * SW_W, y = n.y * SW_H - SW_HW * 0.45;
+    var d = Math.hypot(wx - x, wy - y);
+    if (d < SW_HW * 1.05 && d < bd) { best = n; bd = d; }
+  });
+  if (!best) { swClosePop(); return; }
+  swPopFor = best;
+  swPopRender();
+  var pop = document.getElementById('sw-pop');
+  pop.style.display = 'block';
+  TK.placePop(pop, swStage, swCam, best.x, best.y - 0.06);
+  TK.haptic('light');
+}
+
+function swResize() {
+  TK.fitStageFill(swStage, swCam, SW_W / SW_H);
+  swK = TK.fitSize(SW_W, SW_H, 4096, 14000000);
+  var W = Math.round(SW_W * swK), H = Math.round(SW_H * swK);
+  [swC1, swC2, swCo].forEach(function (cv) { TK.setSize(cv, W, H); });
+  swAnimDirty = true;
+  swBakeBg();
+  swCamK.clamp(); swCamK.apply();
+}
+
+swStage = document.getElementById('sw-stage');
+swCam = document.getElementById('sw-cam');
+swC1 = document.getElementById('sw-c1'); swC2 = document.getElementById('sw-c2');
+swCo = document.getElementById('sw-co'); swTx = document.getElementById('sw-tx');
+swCamK = TK.cam(swStage, swCam, { max: 8, exclude: '.sw-pop,.sw-zoom', change: function () {
+  swAnimDirty = true;
+  if (swPopFor) TK.placePop(document.getElementById('sw-pop'), swStage, swCam, swPopFor.x, swPopFor.y - 0.06);
+} });
+swCamK.onTap(swTap);
+document.getElementById('sw-zin').addEventListener('click', function (e) {
+  e.stopPropagation(); swCamK.zoomAt(swStage.clientWidth / 2, swStage.clientHeight / 2, 1.5);
+});
+document.getElementById('sw-zout').addEventListener('click', function (e) {
+  e.stopPropagation(); swCamK.zoomAt(swStage.clientWidth / 2, swStage.clientHeight / 2, 1 / 1.5);
+});
+document.getElementById('sw-fit').addEventListener('click', function (e) {
+  e.stopPropagation(); swCamK.reset();
+});
+window.addEventListener('resize', function () { swResize(); swBakeHouses(); });
+swResize();
+TK.heartbeat('seawarwar');
+requestAnimationFrame(swLoop);
+</script>
+{{end}}

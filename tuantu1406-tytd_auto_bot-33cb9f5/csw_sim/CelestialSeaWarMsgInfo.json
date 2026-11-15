@@ -1,0 +1,294 @@
+{
+    "SeaWar":[
+        {
+            "key": "S_SEA_WAR_ENTER",
+            "comment": "进入罗天幻海活动界面",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarEnterResp"
+        },
+        {
+            "key": "S_SEA_WAR_ENTER_GAME",
+            "comment": "进入罗天幻海游戏界面",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarEnterGameResp"
+        },
+        {
+            "key": "S_SEA_WAR_SOUL_BALL_LIST",
+            "comment": "拥有妖丹列表",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarSoulBallListResp"
+        },
+        {
+            "key": "S_SEA_WAR_GAME_MAP",
+            "comment": "玩法地图数据",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarGameMapResp"
+        },
+        {
+            "key": "S_SEA_WAR_UNION_MEMBER_LIST",
+            "comment": "妖盟成员列表",
+            "cmMethod": "SeaWarUnionMemberListReq",
+            "smMethod": "SeaWarUnionMemberListResp"
+        },
+        {
+            "key": "S_SEA_WAR_EXPLORE",
+            "comment": "探索",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarExploreResp"
+        },
+        {
+            "key": "S_SEA_WAR_HANDLE_EVENT",
+            "comment": "处理事件",
+            "cmMethod": "SeaWarHandleEventReq",
+            "smMethod": "SeaWarHandleEventResp"
+        },
+        {
+            "comment":"事件-挑战玩家",
+            "byteDecode": "SeaWarEvent_ChallengePlayer"
+        },
+        {
+            "comment":"事件-挑战怪物",
+            "byteDecode": "SeaWarEvent_ChallengeMonster"
+        },
+        {
+            "comment":"事件-开启普通宝箱",
+            "byteDecode": "SeaWarEvent_OpenNormalBox"
+        },
+        {
+            "comment":"事件-炼化宝石",
+            "byteDecode": "SeaWarEvent_ForgeGem"
+        },
+        {
+            "comment":"事件-开启协助宝箱",
+            "byteDecode": "SeaWarEvent_OpenHelpBox"
+        },
+        {
+            "comment":"事件-触发礼包",
+            "byteDecode": "SeaWarEvent_TriggerGift"
+        },
+        {
+            "comment":"事件-探查水泉",
+            "byteDecode": "SeaWarEvent_ProbeWaterSpring"
+        },
+        {
+            "key": "S_SEA_WAR_GAME_LOG",
+            "comment": "玩法日志",
+            "cmMethod": "SeaWarGameLogReq",
+            "smMethod": "SeaWarGameLogResp"
+        },
+        {
+            "key": "S_SEA_WAR_ASSIST_LIST",
+            "comment": "协助列表",
+            "cmMethod": "SeaWarAssistListReq",
+            "smMethod": "SeaWarAssistListResp"
+        },
+        {
+            "key": "S_SEA_WAR_ASSIST",
+            "comment": "协助",
+            "cmMethod": "SeaWarAssistReq",
+            "smMethod": "SeaWarAssistRsp"
+        },
+        {
+            "key": "S_SEA_WAR_PLAYER_INFO_SYNC",
+            "comment": "玩家数据同步",
+            "cmMethod": "",
+            "smMethod": "SeaWarPlayerInfoSync"
+        },
+        {
+            "key": "S_SEA_WAR_ASSIST_REWARD",
+            "comment": "领取协助奖励",
+            "cmMethod": "SeaWarAssistRewardReq",
+            "smMethod": "SeaWarAssistRewardRsp"
+        },
+        {
+            "key": "S_SEA_WAR_ASSIST_SYNC",
+            "comment": "推送协助增量",
+            "cmMethod": "",
+            "smMethod": "SeaWarAssistSync"
+        },
+        {
+            "key": "S_SEA_WAR_UNION_WELFARE",
+            "comment": "妖盟福利",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarUnionWelfareResp"
+        },
+        {
+            "key": "S_SEA_WAR_UNION_WELFARE_REWARD",
+            "comment": "领取妖盟福利奖励",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarUnionWelfareRewardResp"
+        },
+        {
+            "key": "S_SEA_WAR_UNION_RECEIVE_LIQUID",
+            "comment": "领取妖盟灵液",
+            "cmMethod": "SeaWarUnionLiquidRewardReq",
+            "smMethod": "SeaWarUnionLiquidRewardResp"
+        },
+        {
+            "key": "S_SEA_WAR_UNION_SEND_LIQUID",
+            "comment": "发送灵液",
+            "cmMethod": "SeaWarUnionLiquidSendReq",
+            "smMethod": "SeaWarUnionLiquidSendResp"
+        },
+        {
+            "key": "S_SEA_WAR_UNION_LIQUID_RECORD",
+            "comment": "查看灵液发送记录",
+            "cmMethod": "SeaWarUnionLiquidRecordReq",
+            "smMethod": "SeaWarUnionLiquidRecordResp"
+        },
+        {
+            "key": "S_SEA_WAR_HEART_BEAT",
+            "comment": "心跳",
+            "cmMethod": "SeaWarHeartBeatReq",
+            "smMethod": "SeaWarHeartBeatResp"
+        },
+        {
+            "key": "S_SEA_WAR_NEXT_REGION",
+            "comment": "进入下一层",
+            "cmMethod": "SeaWarNextRegionReq",
+            "smMethod": "SeaWarNextRegionResp"
+        },
+        {
+            "key": "S_SEA_WAR_LOCK_AVATAR",
+            "comment": "锁定分身数据",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarLockAvatarResp"
+        },
+        {
+            "key": "S_SEA_WAR_USE_ITEM",
+            "comment": "使用道具加体力",
+            "cmMethod": "SeaWarUseItemReq",
+            "smMethod": "SeaWarUseItemResp"
+        },
+        {
+            "key": "S_SEA_WAR_GET_UNION_MEMBER_LIST",
+            "comment": "获取参加活动妖盟成员列表",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarGetUnionMemberListResp"
+        },
+        {
+            "key": "S_SEA_WAR_RED_POINT_DATA",
+            "comment": "红点数据",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarRedPointDataResp"
+        },
+        {
+            "key": "S_SEA_WAR_WORSHIP",
+            "comment": "膜拜",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarWorshipResp"
+        },
+        {
+            "key": "S_SEA_WAR_UNION_SUMMARY",
+            "comment": "妖盟各阶段积分",
+            "cmMethod": "SeaWarUnionSummaryReq",
+            "smMethod": "SeaWarUnionSummaryResp"
+        },
+        {
+            "key": "S_SEA_WAR_DROP_REGION_SYNC",
+            "comment": "同步玩家掉层",
+            "cmMethod": "",
+            "smMethod": "SeaWarDropRegionSync"
+        },
+        {
+            "key": "S_SEA_WAR_HORSE_LAMP_SYNC",
+            "comment": "跑马灯同步",
+            "cmMethod": "",
+            "smMethod": "SeaWarHorseLampSync"
+        },
+        {
+            "key": "S_SEA_WAR_CHALLENGE_LIST",
+            "comment": "妖盟挑战列表",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarChallengeListResp"
+        },
+        {
+            "key": "S_SEA_WAR_CHALLENGE_INFO_SYNC",
+            "comment": "同步挑战信息",
+            "cmMethod": "",
+            "smMethod": "SeaWarChallengeInfoSync"
+        },
+        {
+            "key": "S_SEA_WAR_DECLARATION_INFO_SYNC",
+            "comment": "同步宣战信息",
+            "cmMethod": "",
+            "smMethod": "SeaWarDeclarationInfoSync"
+        },
+        {
+            "key": "S_SEA_WAR_DECLARATION_RECORD",
+            "comment": "宣战记录",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarDeclarationRecordResp"
+        },
+        {
+            "key": "S_SEA_WAR_UNION_DECLARATION_RECORD",
+            "comment": "所有妖盟宣战记录",
+            "cmMethod": "SeaWarCommonReq",
+            "smMethod": "SeaWarUnionDeclarationRecordResp"
+        },
+        {
+            "key": "S_SEA_WAR_ENTER_CHALLENGE",
+            "comment": "进入挑战",
+            "cmMethod": "SeaWarEnterChallengeReq",
+            "smMethod": "SeaWarEnterChallengeResp"
+        },
+        {
+            "key": "S_SEA_WAR_CHALLENGE_INFO",
+            "comment": "宣战信息",
+            "cmMethod": "SeaWarRoomInfoReq",
+            "smMethod": "SeaWarRoomInfoResp"
+        },
+        {
+            "key": "S_SEA_WAR_CHALLENGE_BATTLE",
+            "comment": "挑战战斗",
+            "cmMethod": "SeaWarChallengeReq",
+            "smMethod": "SeaWarChallengeResp"
+        },
+        {
+            "key": "S_SEA_WAR_CHALLENGE_REPORT",
+            "comment": "挑战战报",
+            "cmMethod": "SeaWarBattleReportReq",
+            "smMethod": "SeaWarBattleReportResp"
+        },
+        {
+            "key": "S_SEA_WAR_CHALLENGE_DAMAGE_DETAIL",
+            "comment": "挑战伤害详情",
+            "cmMethod": "SeaWarDamageDetailReq",
+            "smMethod": "SeaWarDamageDetailResp"
+        },
+        {
+            "key": "S_SEA_WAR_CHALLENGE_GROUP_DATA",
+            "comment": "挑战分组数据",
+            "cmMethod": "SeaWarGroupDatasReq",
+            "smMethod": "SeaWarGroupDatasResp"
+        },
+        {
+            "key": "S_SEA_WAR_CHALLENGE_GROUP_DETAIL_DATA",
+            "comment": "挑战分组详情数据",
+            "cmMethod": "SeaWarGroupDetailDatasReq",
+            "smMethod": "SeaWarGroupDetailDatasResp"
+        },
+        {
+            "key": "S_SEA_WAR_PLAYER_DATA",
+            "comment": "玩家数据",
+            "cmMethod": "SeaWarPlayerDataReq",
+            "smMethod": "SeaWarPlayerDataResp"
+        },
+        {
+            "key": "S_SEA_WAR_DECLARATION",
+            "comment": "宣战",
+            "cmMethod": "SeaWarDeclarationReq",
+            "smMethod": "SeaWarDeclarationResp"
+        },
+        {
+            "comment":"竞猜列表",
+            "byteDecode": "SeaWarGuessUnionInfoList"
+        },
+        {
+            "key": "S_SEA_WAR_UNION_MEMBER_INFO",
+            "comment": "妖盟成员信息",
+            "cmMethod": "SeaWarUnionMemberReq",
+            "smMethod": "SeaWarUnionMemberResp"
+        }
+    ]
+}

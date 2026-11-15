@@ -1,0 +1,88 @@
+{{define "content"}}
+<div class="card">
+  <h1>Bảng điều khiển</h1>
+  <h2>Trạng thái</h2>
+  <p style="margin:2px 0 8px">Treo game: <span id="pill-running" class="pill {{if .Running}}on{{else}}off{{end}}">{{if .Running}}ĐANG CHẠY{{else}}NGƯNG{{end}}</span></p>
+  <p style="margin:4px 0" class="small">VIP: <span id="stat-vip">cấp {{.User.VipLevel}}{{if gt .User.VipLevel 0}} — tới {{.User.VipExpireAt.Format "15:04 02/01/2006"}}{{end}}</span></p>
+  <p style="margin:4px 0" class="small">Server game: <b id="stat-server">{{.User.ServerID}}</b> · <span id="stat-uid">{{if .User.GameUID}}nhân vật #{{.User.GameUID}}{{else}}chưa chọn nhân vật{{end}}</span></p>
+  <p style="margin:4px 0" class="small">Tên đăng nhập: {{.User.Username}}{{if .User.IngameName}} · Tên trong game: <b>{{.User.IngameName}}</b>{{end}} · <a href="/account">đổi mật khẩu / nạp mã VIP</a></p>
+  {{if .IsLeader}}
+  <h2 style="margin-top:14px">Toàn bang</h2>
+  <p style="margin:4px 0" class="small">Đệ tử đang treo: <b id="fleet-members">—</b> · Acc sự kiện đang treo: <b id="fleet-events">—</b></p>
+  {{end}}
+</div>
+
+<div class="card">
+  <h1>Điều khiển phiên</h1>
+  <div class="btns">
+    <form method="post" action="/account" data-live="1"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="action" value="login"><button type="submit">Đăng nhập game</button></form>
+    <form method="post" action="/account" data-live="1"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="action" value="logout"><button class="danger" type="submit">Đăng xuất game</button></form>
+    {{if and .Running .OpenLK}}<form method="post" action="/account" data-live="1"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="action" value="lkstart"><button type="submit" data-nodisable>🗡 Tự chơi Luyện Khí</button></form>{{end}}
+  </div>
+  <p class="small">Đổi tên đăng nhập / mật khẩu / server thì qua trang Tài khoản.</p>
+</div>
+
+<div class="card">
+  <h1>Công tắc</h1>
+  <p class="small">Cần đang treo game. Nút xanh = bật, đỏ = tắt; trạng thái tự cập nhật theo thời gian thực.</p>
+  {{$c := .CSRF}}{{$T := .Toggles}}
+  <div class="togrow">
+    <div class="togl"><span class="tname">Tự động chạy chuột</span><span id="tog-chuot" class="pill {{if $T.chuot}}on{{else}}off{{end}}">{{if $T.chuot}}BẬT{{else}}TẮT{{end}}</span></div>
+    <form method="post" action="/toggle" class="togb" data-live="1"><input type="hidden" name="csrf" value="{{$c}}">
+      <input type="hidden" id="feat-chuot" name="feat" value="{{if $T.chuot}}chuot_off{{else}}chuot_on{{end}}">
+      <button id="bt-chuot" class="{{if $T.chuot}}danger{{else}}g{{end}}" type="submit">{{if $T.chuot}}Tắt{{else}}Bật{{end}}</button></form>
+  </div>
+  <div class="togrow">
+    <div class="togl"><span class="tname">Thông báo</span><span id="tog-notify" class="pill {{if $T.notify}}on{{else}}off{{end}}">{{if $T.notify}}BẬT{{else}}TẮT{{end}}</span></div>
+    <form method="post" action="/toggle" class="togb" data-live="1"><input type="hidden" name="csrf" value="{{$c}}">
+      <input type="hidden" id="feat-notify" name="feat" value="{{if $T.notify}}notify_off{{else}}notify_on{{end}}">
+      <button id="bt-notify" class="{{if $T.notify}}danger{{else}}g{{end}}" type="submit">{{if $T.notify}}Tắt{{else}}Bật{{end}}</button></form>
+  </div>
+  <div class="togrow">
+    <div class="togl"><span class="tname">Mạo hiểm</span><span id="tog-maohiem" class="pill {{if $T.maohiem}}on{{else}}off{{end}}">{{if $T.maohiem}}BẬT{{else}}TẮT{{end}}</span></div>
+    <form method="post" action="/toggle" class="togb" data-live="1"><input type="hidden" name="csrf" value="{{$c}}">
+      <input type="hidden" id="feat-maohiem" name="feat" value="{{if $T.maohiem}}maohiem_off{{else}}maohiem_on{{end}}">
+      <button id="bt-maohiem" class="{{if $T.maohiem}}danger{{else}}g{{end}}" type="submit">{{if $T.maohiem}}Tắt{{else}}Bật{{end}}</button></form>
+  </div>
+  <div class="togrow">
+    <div class="togl"><span class="tname">Lục đạo</span><span id="tog-lucdao" class="pill {{if $T.lucdao}}on{{else}}off{{end}}">{{if $T.lucdao}}BẬT{{else}}TẮT{{end}}</span></div>
+    <form method="post" action="/toggle" class="togb" data-live="1"><input type="hidden" name="csrf" value="{{$c}}">
+      <input type="hidden" id="feat-lucdao" name="feat" value="{{if $T.lucdao}}lucdao_off{{else}}lucdao_on{{end}}">
+      <button id="bt-lucdao" class="{{if $T.lucdao}}danger{{else}}g{{end}}" type="submit">{{if $T.lucdao}}Tắt{{else}}Bật{{end}}</button></form>
+  </div>
+  <div class="togrow">
+    <div class="togl"><span class="tname">Yêu tháp</span><span id="tog-yeuthap" class="pill {{if $T.yeuthap}}on{{else}}off{{end}}">{{if $T.yeuthap}}BẬT{{else}}TẮT{{end}}</span></div>
+    <form method="post" action="/toggle" class="togb" data-live="1"><input type="hidden" name="csrf" value="{{$c}}">
+      <input type="hidden" id="feat-yeuthap" name="feat" value="{{if $T.yeuthap}}yeuthap_off{{else}}yeuthap_on{{end}}">
+      <button id="bt-yeuthap" class="{{if $T.yeuthap}}danger{{else}}g{{end}}" type="submit">{{if $T.yeuthap}}Tắt{{else}}Bật{{end}}</button></form>
+  </div>
+  <div class="togrow">
+    <div class="togl"><span class="tname">Huyết mạch</span><span id="tog-huyetmach" class="pill {{if $T.huyetmach}}on{{else}}off{{end}}">{{if $T.huyetmach}}BẬT{{else}}TẮT{{end}}</span></div>
+    <form method="post" action="/toggle" class="togb" data-live="1"><input type="hidden" name="csrf" value="{{$c}}">
+      <input type="hidden" id="feat-huyetmach" name="feat" value="{{if $T.huyetmach}}huyetmach_off{{else}}huyetmach_on{{end}}">
+      <button id="bt-huyetmach" class="{{if $T.huyetmach}}danger{{else}}g{{end}}" type="submit">{{if $T.huyetmach}}Tắt{{else}}Bật{{end}}</button></form>
+  </div>
+  <div class="togrow">
+    <div class="togl"><span class="tname">Chặt cây</span><span id="tog-peach" class="pill {{if $T.peach}}on{{else}}off{{end}}">{{if $T.peach}}BẬT{{else}}TẮT{{end}}{{if $T.xave}} + đấu pháp{{end}}</span></div>
+    <form method="post" action="/toggle" class="togb" data-live="1"><input type="hidden" name="csrf" value="{{$c}}">
+      <input type="hidden" id="feat-peach" name="feat" value="{{if not $T.peach}}chatcay_on{{else if $T.xave}}chatcay_off{{else}}chatcay_xave_on{{end}}">
+      <button id="bt-peach" class="{{if not $T.peach}}g{{else if $T.xave}}danger{{end}}" type="submit">{{if not $T.peach}}Chặt{{else if $T.xave}}Nghỉ{{else}}Chặt + đấu pháp{{end}}</button></form>
+  </div>
+  {{if .OpenTayDu}}
+  <div class="togrow">
+    <div class="togl"><span class="tname">Tây Du Phục Ma <span class="small">(spam ải chính tuyến)</span></span><span id="tog-taydu" class="pill {{if $T.taydu}}on{{else}}off{{end}}">{{if $T.taydu}}BẬT{{else}}TẮT{{end}}</span></div>
+    <form method="post" action="/toggle" class="togb" data-live="1"><input type="hidden" name="csrf" value="{{$c}}">
+      <input type="hidden" id="feat-taydu" name="feat" value="{{if $T.taydu}}taydu_off{{else}}taydu_on{{end}}">
+      <button id="bt-taydu" class="{{if $T.taydu}}danger{{else}}g{{end}}" type="submit">{{if $T.taydu}}Tắt{{else}}Bật{{end}}</button></form>
+  </div>
+  {{end}}
+  {{if .OpenThanLong}}
+  <div class="togrow">
+    <div class="togl"><span class="tname">Luyện Khí Thần Long <span class="small">(1 ván / lần bấm)</span></span><span id="tog-thanlong" class="pill {{if $T.thanlong}}on{{else}}off{{end}}">{{if $T.thanlong}}ĐANG CHƠI{{else}}NGƯNG{{end}}</span></div>
+    <form method="post" action="/toggle" class="togb" data-live="1"><input type="hidden" name="csrf" value="{{$c}}">
+      <input type="hidden" id="feat-thanlong" name="feat" value="thanlong_run">
+      <button id="bt-thanlong" class="g" type="submit" data-nodisable>Chạy ván</button></form>
+  </div>
+  {{end}}
+</div>
+{{end}}

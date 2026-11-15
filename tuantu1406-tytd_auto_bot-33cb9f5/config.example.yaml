@@ -1,0 +1,27 @@
+# tytd_auto_bot runtime configuration.
+#
+# Copy to config.yaml next to the binary (or point the bot at it with
+#   ./main -config /path/to/config.yaml   or   export TYTD_CONFIG=/path/to/config.yaml)
+# then:  chmod 600 config.yaml
+#
+# Every value below can also come from the environment (mainly for containers):
+#   TYTD_TELEGRAM_TOKEN            -> telegram_token
+#   TYTD_TELEGRAM_TOKEN_ENCRYPTED  -> telegram_token_encrypted
+#   TYTD_ADMIN_CHAT_ID             -> admin_chat_id
+# Environment values win over the file.
+
+# Telegram bot token from @BotFather.
+telegram_token: "123456789:AAExampleReplaceMeWithYourRealBotToken_xxxxxxxxxxxxx"
+
+# Alternative to telegram_token: the AES-256-GCM encrypted blob so the raw
+# token never sits in plaintext on disk. Produce it with the gen tool:
+#   make build-gen && ./build/gen "123456789:AAYo..."
+# Set exactly ONE of telegram_token / telegram_token_encrypted.
+# telegram_token_encrypted: ""
+
+# Telegram user/chat ID of the bot admin (the account allowed to use admin
+# commands; also gets the owner-level notifications). Ask @userinfobot for yours.
+admin_chat_id: 123456789
+
+# Verbose logging (equivalent to toggling debug mode in the DB config).
+debug: false

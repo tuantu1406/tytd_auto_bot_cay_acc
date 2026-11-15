@@ -1,0 +1,1039 @@
+{{define "content"}}
+{{/* Đỉnh Bắc Minh mini app (engine remoteKunlunWar, type 332): full-screen board drawn with the game's OWN sprites.
+     Ground is baked ONCE into ku-c1; the live layer ku-ct repaints
+     tints→decor every SSE frame (painting decor after the tints keeps
+     plates above the colour wash — it used to be a 4th canvas, but iOS
+     silently blanks canvases past its memory budget, which is exactly the
+     "no colour, no marches" report); a rAF layer (ku-co) animates selection,
+     dots and march ribbons; ALL text lives on ku-text, a screen-space canvas
+     outside the CSS-scaled camera, so labels stay crisp at 5× zoom.
+     Bakes are capped at ~10.5Mpx each (kuFitK).
+     Assets are cached a year (immutable), so reopening costs almost no data. */}}
+<div class="ku-app">
+  <div class="ku-top">
+    <b>Đỉnh Bắc Minh</b>
+    <span id="ku-phase" class="ku-phase"></span>
+    <span id="ku-vstat" class="ku-status" title="Người xem trực tiếp quanh vùng hiện tại (219903)"></span>
+    <span id="ku-status" class="ku-status">đang tải sân chơi…</span>
+  </div>
+  <div class="ku-stage" id="ku-stage">
+    <div class="ku-cam" id="ku-cam">
+      <canvas id="ku-c1"></canvas>
+      <canvas id="ku-ct"></canvas>
+      <canvas id="ku-co"></canvas>
+    </div>
+    <canvas class="ku-text" id="ku-text"></canvas>
+    <div class="ku-zoom">
+      <button type="button" id="ku-zin" title="Phóng to">+</button>
+      <button type="button" id="ku-zout" title="Thu nhỏ">−</button>
+      <button type="button" id="ku-fit" title="Vừa khung">⤢</button>
+    </div>
+    <div class="ku-hud">
+      <button type="button" id="ku-boost" title="Tăng tốc mọi acc đang hành quân (lệnh thật 219918)">⚡ Tăng tốc</button>
+      <button type="button" id="ku-rev" class="item" title="Hồi sinh NGAY bằng vật phẩm cho mọi acc đang chết">❤ Hồi sinh nhanh</button>
+      <button type="button" id="ku-eat" title="Acc nào dưới 10 năng lượng sẽ cắn LIÊN TỤC cho tới khi đủ 10 (bot học mức hồi thật từ SERVER qua mỗi phát, giỏ ít quả thì cắn hết số còn lại, giới hạn 6 phát) — acc đã ≥10 tự bỏ qua, không tốn quả. 219926 là lệnh item duy nhất được phép ngoài hồi sinh.">🍈 Cắn quả</button>
+    </div>
+    <div class="ku-pop" id="ku-pop" style="display:none"></div>
+    <div class="ku-fan" id="ku-fan" style="display:none"></div>
+    <canvas class="ku-mini" id="ku-mini" title="Bấm để nhảy tới"></canvas>
+  </div>
+</div>
+
+<style>
+/* Full-viewport map — the top bar floats OVER the board (like the game's
+   own HUD), so the world owns every pixel the phone has. */
+.ku-app{position:fixed;inset:0;background:#0a0e18}
+.ku-top{position:absolute;top:calc(env(safe-area-inset-top) + 6px);left:8px;right:76px;z-index:6;
+  display:flex;align-items:center;gap:8px;padding:5px 10px;color:#ebebeb;font-size:14px;
+  background:rgba(10,14,24,.55);border:1px solid rgba(60,80,105,.4);border-radius:10px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
+.ku-phase{font-size:12px;color:#ffd76e;white-space:nowrap}
+.ku-status{margin-left:auto;font-size:11px;color:#8fa2b5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ku-stage{position:absolute;inset:0;overflow:hidden;touch-action:none}
+.ku-cam{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.ku-cam canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* Screen-space text overlay: sits OUTSIDE the camera div so its canvas
+   bitmap is never CSS-upscaled — every map label stays crisp at 5× zoom
+   (bake-layer text was the "chữ mờ" complaint, 2026-10-07). */
+.ku-text{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:4}
+.ku-zoom{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 44px);display:flex;flex-direction:column;gap:6px;z-index:5}
+.ku-zoom button{width:36px;height:36px;border-radius:8px;border:0;background:#1b2433;color:#dfe8f2;font-size:18px;line-height:1}
+.ku-mini{position:absolute;left:10px;bottom:10px;width:132px;z-index:5;border:1px solid #2c3a4e;border-radius:6px;background:#0a0e18}
+/* Army-level HUD orders (bottom-right; the minimap owns bottom-left and the
+   zoom stack owns top-right). .item marks the ONE button that spends a
+   revive item — the game's popup colours it the same way. */
+.ku-hud{position:absolute;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);display:flex;flex-direction:column;gap:6px;z-index:5}
+.ku-hud button{padding:8px 11px;border-radius:9px;border:1px solid rgba(202,166,74,.45);background:#1b2433;color:#f0e9d8;font-size:12px}
+.ku-hud button:active{transform:scale(.94)}
+.ku-hud button.item{border-color:rgba(255,120,110,.6);color:#ffe0da}
+/* No fruit dimming (user 2026-10-06): the buttons are pressable from
+   anywhere on the map — j.spar is only ONE puller's tree sample (219910)
+   and never a reason to grey anything out; the server answers per account. */
+/* Game-style target panel — same skin appkit.js injects on the other
+   boards (kunlun predates appkit, so the CSS is mirrored here verbatim). */
+.ku-pop{position:absolute;z-index:9;min-width:180px;max-width:74%;padding:9px 11px;font-size:13px;
+  background:linear-gradient(180deg,rgba(26,32,46,.98),rgba(9,13,22,.98));
+  border:1px solid rgba(202,166,74,.55);border-radius:9px;box-shadow:0 6px 22px rgba(0,0,0,.6);color:#f0e9d8;
+  max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ku-pop b{display:block;margin-bottom:3px}
+.ku-pop .o{color:#9fb2c6;font-size:12px;margin-bottom:5px}
+.ku-pop .mv{color:#9fd2ff;font-size:12px}
+/* Radial ink menu of the selected tile — the game fans round brush buttons
+   on an arc ABOVE the tile (flipping below near the top edge). The container
+   sits AT the tile centre; each button offsets itself by left/top. */
+.ku-fan{position:absolute;z-index:8;width:0;height:0;pointer-events:none}
+.ku-fb{position:absolute;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;padding:0;
+  pointer-events:auto;font:700 11px/1.15 system-ui,sans-serif;letter-spacing:.3px;color:#eafff0;
+  background:radial-gradient(circle at 35% 28%,rgba(96,148,106,.5),rgba(10,20,14,.88) 72%);
+  border:1.5px solid rgba(170,255,190,.55);
+  box-shadow:0 0 12px rgba(80,255,120,.35),inset 0 0 10px rgba(0,0,0,.6);text-shadow:0 1px 2px #000}
+.ku-fb:active{transform:scale(.92);
+  background:radial-gradient(circle at 35% 28%,rgba(150,220,160,.65),rgba(16,32,20,.9) 72%)}
+.ku-fb.a{border-color:rgba(255,150,130,.6);color:#ffe9e2;
+  box-shadow:0 0 12px rgba(255,80,60,.4),inset 0 0 10px rgba(0,0,0,.6)}
+.ku-pop .tk-hd{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.ku-pop .tk-hc{min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ku-pop .tk-hc b{color:#fff;font-size:14px;text-shadow:0 1px 2px #000;margin-bottom:0}
+.ku-pop .tk-rib{font-size:10px;padding:1px 7px;border-radius:3px;background:linear-gradient(180deg,#332a15,#1c1708);
+  border:1px solid #caa64a;color:#e8c56d;letter-spacing:.4px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ku-pop .tk-chip{font-size:11px;padding:1px 7px;border-radius:9px;background:rgba(30,42,60,.85);
+  border:1px solid #33455e;color:#cfe0f2;white-space:nowrap}
+.ku-pop .tk-chip.f{color:#ff7a6b;border-color:#6e2a24;animation:tkpuls 1s infinite}
+@keyframes tkpuls{50%{opacity:.35}}
+</style>
+
+<script>
+var KU_CSRF = '{{.CSRF}}';
+var kuArtV = ''; // scene ETag: busts the browser's art cache on every rebuild (sheet rects move with the bake)
+var KU_ART = function (p) { return '/events/mapart?b=bm&p=' + encodeURIComponent(p) + (kuArtV ? '&v=' + kuArtV : ''); };
+var kuScene = null, kuSheetImg = null, kuLineImgs = [], kuMiniImg = null;
+var kuFrame = null, kuOff = 0;           // server ms − Date.now(), from f.ts
+var kuCam = { s: 1, tx: 0, ty: 0, lastTap: 0 };
+// rAF idle-skip: the co/text layers are bake-sized canvases — clearing and
+// redrawing them 60×/s churns a ~10MP texture every frame (the zoom-out
+// "map giật giật" report). Redraw only while something animates or the
+// picture actually changed; every state setter below flips this flag.
+var kuAnimDirty = true;
+var kuGmc, kuStage, kuC1, kuCt, kuCo, kuTx;
+var kuTpx = 0, kuTox = 0, kuToy = 0; // bake→screen map recomputed every frame
+function kuPX(x) { return kuTox + x * kuTpx; }
+function kuPY(y) { return kuToy + y * kuTpx; }
+var kuCityAtPos = {};                     // posIndex → scene city {id,name,rank}
+var kuDragged = false;
+var KU_STATIC_W = 5000;                   // world px → canvas px cap (one bake, crisp at 5×)
+// iOS canvas budget: EVERY board must bake ≤10.5Mpx per canvas (the old
+// 3840²=14.75M ceiling with margin) — kunlun's raw 5000-wide box came to
+// 14.89Mpx and 4 layers, and iPhones silently blanked the later canvases
+// ("no tints, no marches" phone report). kuFitK honours BOTH caps.
+var KU_STATIC_AREA = 10500000;
+function kuFitK(sc) {
+  return Math.min(1, KU_STATIC_W / sc.box[2], Math.sqrt(KU_STATIC_AREA / (sc.box[2] * sc.box[3])));
+}
+
+function kuImg(url) {
+  return new Promise(function (res, rej) {
+    var im = new Image();
+    im.onload = function () { res(im); };
+    im.onerror = function () { rej(new Error('img ' + url)); };
+    im.src = url;
+  });
+}
+
+// ---- boot: scene + art -------------------------------------------------------
+function kuBoot() {
+  // no-store: the scene bake rotates with the binary; until the 2026-11-03
+  // ETag fix shipped, servers answered it with a blind 24 h max-age, so a
+  // cached OLD bake could survive the upgrade — always revalidate instead.
+  fetch(KU_ART('scene.json'), { credentials: 'same-origin', cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error('scene ' + r.status); kuArtV = (r.headers.get('ETag') || '').replace(/[^0-9a-zA-Z]/g, ''); return r.json(); })
+    .then(function (sc) {
+      kuScene = sc;
+      sc.cities.forEach(function (c) { kuCityAtPos[c.pos] = c; });
+      return Promise.all(
+        [kuImg(KU_ART(sc.assets.sheet)), kuImg(KU_ART(sc.assets.smallmap))]
+          .concat(sc.assets.lines.map(function (n) { return kuImg(KU_ART(n)); })));
+    })
+    .then(function (rs) {
+      kuSheetImg = rs[0]; kuMiniImg = rs[1]; kuLineImgs = rs.slice(2);
+      kuResize();
+      kuBake();
+      kuMapView(true); // "vào map là lấy thông tin người xung quanh"
+      kuStatus('trực tiếp · đang chờ khung hình…');
+      kuLastAt = Date.now();
+      setInterval(function () {
+        if (!kuScene || document.hidden) return;
+        var st = Date.now() - kuLastAt;
+        if (st > 12000) kuStatus('⚠️ mất khung hình ' + Math.round(st / 1000) + 's — tải lại trang');
+      }, 2000);
+      kuSub(1);
+      setInterval(function () { if (!document.hidden) kuSub(1); }, 8000);
+      window.addEventListener('pagehide', function () { kuSub(0); });
+      document.addEventListener('visibilitychange', function () { kuSub(document.hidden ? 0 : 1); });
+      requestAnimationFrame(kuLoop);
+    })
+    .catch(function (e) { kuStatus('không tải được sân chơi (binary cũ? khởi động lại bot)'); });
+}
+function kuStatus(t) { var el = document.getElementById('ku-status'); if (el) el.textContent = t; }
+
+// ---- geometry helpers (kuTileCenter space minus box origin) -----------------
+// kuTC is the client's getPosByCoordinate = the diamond's CENTER-X / TOP-Y:
+// the tile's TOP vertex. A cell rect spans [y, y+2·hh] and its CENTRE is half
+// a tile BELOW the anchor. The client splits its sprites accordingly:
+//   ground plates (Water/Floor/Block) + tints/lines/markers = centred on the
+//   cell (BlockItem: o.y += tileHeight/2, anchor .5);
+//   raised plates (decor + city) = BOTTOM edge on the anchor, spanning [y−h, y].
+function kuTC(tx, ty) { // tile anchor (top vertex) in box px
+  return [(tx - ty) * kuScene.hw + (kuScene.col - 1) * kuScene.hw - kuScene.box[0],
+          (tx + ty) * kuScene.hh - kuScene.box[1]];
+}
+function kuCC(tx, ty) { var p = kuTC(tx, ty); return [p[0], p[1] + kuScene.hh]; } // cell CENTRE
+function kuPosPt(p) { return kuCC(p % kuScene.col, Math.floor(p / kuScene.col)); }
+
+// ---- camera (same model as events.html) --------------------------------------
+// A camera that STOPS moving is a request: the view-window detail (219903
+// behind /events/mapview) is asked once on boot and again every time the
+// pan/zoom settles on a NEW tile window, so the popups know who stands on
+// the tiles under the user's eyes.
+var kuCamTimer = 0;
+function kuApplyCam() {
+  kuAnimDirty = true; // screen-space text layer hangs off the camera
+  kuGmc.style.transform = 'translate(' + kuCam.tx.toFixed(1) + 'px,' + kuCam.ty.toFixed(1) + 'px) scale(' + kuCam.s.toFixed(3) + ')';
+  kuMiniDraw();
+  if (kuPopFor) { kuPopPlace(); kuFanPlace(); }
+  clearTimeout(kuCamTimer);
+  kuCamTimer = setTimeout(function () { kuMapView(false); }, 900);
+}
+
+// ---- view-window detail (219903 · /events/mapview) ---------------------------
+// cells = who STANDS per tile ({n,u,p,o}; o = viewer's side, set server-side),
+// prog = per-tile union capture progress, max = full-capture threshold
+// (10×KUNLUNWAR_OCCUPY_AREA_COST, 0 = config unseen → no ĐÃ CHIẾM verdict).
+var kuView = { cells: {}, cities: {}, prog: {}, max: 0 }, kuViewSeq = 0, kuViewKey = '';
+// Tiles intersecting the camera, in tile coords: tx/ty are LINEAR in the box
+// fractions (kuCellAt's inverse), so the visible rect's corners bound them.
+function kuVisibleTiles() {
+  if (!kuScene || !kuStage || !kuGmc.clientWidth) return null;
+  var sc = kuScene, sr = kuStage.getBoundingClientRect(), gx = kuGmc.getBoundingClientRect();
+  var cx0 = Math.max(sr.left, gx.left), cy0 = Math.max(sr.top, gx.top);
+  var cx1 = Math.min(sr.right, gx.right), cy1 = Math.min(sr.bottom, gx.bottom);
+  if (cx1 <= cx0 || cy1 <= cy0) return null;
+  var mn = [1e9, 1e9], mx = [-1e9, -1e9];
+  for (var i = 0; i < 4; i++) {
+    var cx = (i & 1) ? cx1 : cx0, cy = (i & 2) ? cy1 : cy0;
+    var nx = (cx - gx.left) / gx.width, ny = (cy - gx.top) / gx.height;
+    var u = (sc.box[0] + nx * sc.box[2] - (sc.col - 1) * sc.hw) / sc.hw; // tx − ty
+    var v = (sc.box[1] + ny * sc.box[3]) / sc.hh - 1; // tx+ty of the nearest CENTRE (centre = anchor + hh)
+    var tx = (u + v) / 2, ty = (v - u) / 2;
+    mn[0] = Math.min(mn[0], tx); mx[0] = Math.max(mx[0], tx);
+    mn[1] = Math.min(mn[1], ty); mx[1] = Math.max(mx[1], ty);
+  }
+  var x0 = Math.max(0, Math.floor(mn[0])), y0 = Math.max(0, Math.floor(mn[1]));
+  var x1 = Math.min(sc.col - 1, Math.ceil(mx[0])), y1 = Math.min(sc.row - 1, Math.ceil(mx[1]));
+  if (x1 < x0 || y1 < y0) return null;
+  return [x0, y0, x1, y1];
+}
+function kuVStat(t) { var el = document.getElementById('ku-vstat'); if (el) el.textContent = t; }
+function kuMapView(force) {
+  var b = kuVisibleTiles();
+  if (!b) return;
+  var key = b.join(',');
+  if (!force && key === kuViewKey) return;
+  var seq = ++kuViewSeq;
+  kuVStat('👁 …');
+  fetch('/events/mapview?w=bm&x0=' + b[0] + '&y0=' + b[1] + '&x1=' + b[2] + '&y1=' + b[3],
+    { credentials: 'same-origin' })
+    .then(function (r) {
+      if (r.ok) return r.json();
+      return r.text().then(function (t) { throw new Error((t || '').trim() || ('HTTP ' + r.status)); });
+    })
+    .then(function (j) {
+      if (!j || seq !== kuViewSeq) return; // stale answer from an older window
+      kuViewKey = key;
+      kuView = { cells: j.cells || {}, cities: j.cities || {}, prog: j.prog || {}, max: j.max || 0 };
+      kuAnimDirty = true; // standing dots + chips live on the co/text layers
+      // Honest feedback: "no people" must be distinguishable from "the pull
+      // failed" — a silent catch is exactly what hid the 502 from bug reports.
+      var nP = 0, kC = Object.keys(kuView.cells);
+      for (var i = 0; i < kC.length; i++) nP += kuView.cells[kC[i]].length;
+      var nCi = Object.keys(kuView.cities).length;
+      kuVStat('👁 ' + (j.blocks || 0) + ' ô · ' + nCi + ' thành' +
+        (nP ? ' · ' + nP + ' người' : ' · không ai quanh đây'));
+      if (kuPopFor) kuPopRender();
+    }).catch(function (e) {
+      if (seq !== kuViewSeq) return;
+      kuVStat('👁 ⚠ ' + ((e && e.message) || 'lỗi'));
+    });
+}
+// Zoom-out floor: let the board shrink until it FULLY fits the screen. The
+// old floor of 1 meant a pinch-out hit the clamp while the pan branch of
+// kuClampCam still moved tx/ty — that clamp-vs-gesture fight per move event
+// was the "zoom ra map giật giật" report. ax() already rests an eff<=stage
+// board centred, so below-1 zoom is stable.
+function kuMinS() {
+  var w = kuGmc.clientWidth, h = kuGmc.clientHeight;
+  if (!w || !h || !kuStage.clientWidth) return 1;
+  return Math.min(1, kuStage.clientWidth / w, kuStage.clientHeight / h);
+}
+function kuClampCam() {
+  // Cover-fit aware: fold the CSS offsets from kuResize into the pan limits
+  // so an oversized (screen-filling) board rests centered and pans freely.
+  var W = kuStage.clientWidth, H = kuStage.clientHeight;
+  var ox = parseFloat(kuGmc.style.left) || 0, oy = parseFloat(kuGmc.style.top) || 0;
+  kuCam.s = Math.min(5, Math.max(kuMinS(), kuCam.s));
+  var ax = function (stage, off, size, t) {
+    var eff = size * kuCam.s;
+    if (eff <= stage) return (stage - eff) / 2 - off;
+    return Math.max(stage - off - eff, Math.min(-off, t));
+  };
+  kuCam.tx = ax(W, ox, kuGmc.clientWidth, kuCam.tx);
+  kuCam.ty = ax(H, oy, kuGmc.clientHeight, kuCam.ty);
+}
+function kuZoomAt(px, py, factor) {
+  var ns = Math.min(5, Math.max(kuMinS(), kuCam.s * factor)), k = ns / kuCam.s;
+  kuCam.tx = px - (px - kuCam.tx) * k;
+  kuCam.ty = py - (py - kuCam.ty) * k;
+  kuCam.s = ns;
+  kuClampCam(); kuApplyCam();
+}
+function kuResetCam() { kuCam.s = 1; kuCam.tx = 0; kuCam.ty = 0; kuApplyCam(); }
+
+function kuResize() {
+  if (!kuScene) return;
+  var W = kuStage.clientWidth, H = kuStage.clientHeight;
+  if (!W || !H) return;
+  var ar = kuScene.box[2] / kuScene.box[3];
+  var w = Math.max(W, H * ar), h = w / ar; // cover the screen; overflow = pan
+  kuGmc.style.width = w + 'px'; kuGmc.style.height = h + 'px';
+  kuGmc.style.left = ((W - w) / 2).toFixed(1) + 'px';
+  kuGmc.style.top = ((H - h) / 2).toFixed(1) + 'px';
+  kuClampCam(); kuApplyCam();
+}
+
+// ---- static bake: c1 = backdrop+slate+ground, c2 = faded decor+castles+names -
+// Mirrors renderKunlun's pass exactly: base slate diamonds → ground sprites
+// (centred on the cell) → (live tint canvas in between) → raised plates: decor
+// (alpha fade/255) + city plates (bottom edge on the anchor), depth-sorted by
+// centre-y = anchor + h/2 like the client's zIndex (server already sorted).
+function kuSetSize(cv, w, h) {
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+}
+function kuDiamond(ctx, cx, cy, hw, hh) {
+  ctx.beginPath(); ctx.moveTo(cx, cy - hh); ctx.lineTo(cx + hw, cy);
+  ctx.lineTo(cx, cy + hh); ctx.lineTo(cx - hw, cy); ctx.closePath();
+}
+// raised (decor/city plates): bottom edge ON the anchor, sprite spans [y−h, y].
+// ground (Water/Floor/Block): concentric with the cell, centred at anchor + hh.
+function kuDrawSprite(ctx, sp, k, raised) {
+  var r = kuScene.rects[sp[4]];
+  if (!r || r[2] <= 0 || r[3] <= 0) return;
+  var x = sp[0] * k, y = sp[1] * k, w = sp[2] * k, h = sp[3] * k;
+  var top = raised === false ? (y + kuScene.hh * k - h / 2) : (y - h);
+  ctx.save();
+  if (sp[5] & 1) { // mirrored atlas copy (the Go compositor mirrors pixels; canvas mirrors the blit)
+    ctx.translate(x, 0); ctx.scale(-1, 1); ctx.translate(-x, 0);
+  }
+  ctx.drawImage(kuSheetImg, r[0], r[1], r[2], r[3], x - w / 2, top, w, h);
+  ctx.restore();
+}
+function kuBake() {
+  kuAnimDirty = true; // kuSetSize wipes kuCo — force one rAF repaint
+  var sc = kuScene, k = kuFitK(sc);
+  var W = Math.max(1, Math.round(sc.box[2] * k)), H = Math.max(1, Math.round(sc.box[3] * k));
+  [kuC1, kuCt, kuCo].forEach(function (cv) { kuSetSize(cv, W, H); });
+
+  var c = kuC1.getContext('2d');
+  c.fillStyle = 'rgb(' + sc.void[0] + ',' + sc.void[1] + ',' + sc.void[2] + ')';
+  c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgb(' + sc.base[0] + ',' + sc.base[1] + ',' + sc.base[2] + ')';
+  var hw = sc.hw * k, hh = sc.hh * k;
+  for (var ty = 0; ty < sc.row; ty++) {
+    for (var tx = 0; tx < sc.col; tx++) {
+      var g = sc.grid.charCodeAt(ty * sc.col + tx) - 48;
+      if (g !== 1 && g !== 2 && g !== 4) continue;
+      var p = kuCC(tx, ty); // slate sits on the cell CENTRE, under the plate
+      kuDiamond(c, p[0] * k, p[1] * k, hw, hh); c.fill();
+    }
+  }
+  sc.layers.ground.forEach(function (sp) { kuDrawSprite(c, sp, k, false); }); // ground: centred on the cell
+  // Decor/plates/names live on the LIVE layer, painted AFTER the tints, so
+  // the union colour washes the ground under a plate but never the plate.
+  // (Was a 4th canvas; iOS was blanking layers at this memory.)
+  kuTints([]);
+};
+
+// ---- live frames --------------------------------------------------------------
+// Diagnostics the bug report "no colour, no marches" needs: the status line
+// self-reports what the PAGE actually received ("N ô · M đoàn"), and a 12 s
+// frame watchdog separates a dead SSE pipe from a paint problem. Report the
+// exact status text when the board looks wrong.
+var kuLastAt = 0;
+window.addEventListener('tytd:map', function (e) {
+  var f = e.detail;
+  if (!f || f.which !== 'bacminh' || !kuScene) return;
+  kuFrame = f;
+  kuAnimDirty = true;
+  kuLastAt = Date.now();
+  kuOff = (f.ts || 0) * 1000 - Date.now();
+  if (f.idle) { kuStatus('sự kiện chưa mở'); kuTints([]); kuPhaseShow(null); return; }
+  if (f.err) { kuStatus(f.err); return; }
+  var ncells = (f.ku && f.ku.cells || []).length, nroutes = (f.ku && f.ku.routes || []).length;
+  kuStatus('trực tiếp · ' + new Date((f.ts || 0) * 1000).toLocaleTimeString() + ' · ' + ncells + ' ô · ' + nroutes + ' đoàn');
+  kuTints((f.ku && f.ku.cells) || []);
+  kuPhaseShow(f.ku && f.ku.phase);
+  kuMiniDraw();
+  if (kuPopFor) kuPopRender();
+});
+
+// Team read of the board (user spec): own union's tiles GREEN, every other
+// union's tile RED — the palette slots alone made allies and enemies hard to
+// tell apart at a glance. Ku.myslots = the viewing side's slots.
+function kuSlotOwn(s) {
+  var own = kuKu().myslots || [];
+  for (var j = 0; j < own.length; j++) if (own[j] === s) return true;
+  return false;
+}
+var KU_GREEN = '#3fd873', KU_RED = '#e03a3a';
+
+// Occupied-cell diamonds: fill A150 + border A235, own=green others=red.
+// s<0 = contested empty tile: no tint, only the combat marker in kuLoop.
+function kuTints(cells) {
+  var c = kuCt.getContext('2d'), sc = kuScene, k = kuCt.width / sc.box[2];
+  c.clearRect(0, 0, kuCt.width, kuCt.height);
+  var hw = sc.hw * k, hh = sc.hh * k;
+  cells.forEach(function (cl) {
+    if (cl.s < 0) return;
+    var col = kuSlotOwn(cl.s) ? KU_GREEN : KU_RED;
+    var p = kuPosPt(cl.p);
+    kuDiamond(c, p[0] * k, p[1] * k, hw, hh);
+    c.globalAlpha = 150 / 255; c.fillStyle = col; c.fill();
+    c.globalAlpha = 235 / 255; c.strokeStyle = col; c.lineWidth = Math.max(1, 1.5 * k); c.stroke();
+  });
+  c.globalAlpha = 1;
+  // Static decor + city names, re-painted every frame AFTER the tints (see
+  // kuBake). ~200 blits + 37 labels at ≤1 frame/5s — free next to the rAF
+  // layer, and it keeps the tint BELOW the plates like the server renderer.
+  c.globalAlpha = sc.fade / 255;
+  sc.layers.deco.forEach(function (sp) {
+    if (sp[5] & 4) kuDrawSprite(c, sp, k); // faded clutter
+  });
+  c.globalAlpha = 1;
+  sc.layers.deco.forEach(function (sp) {
+    if (!(sp[5] & 4)) kuDrawSprite(c, sp, k); // city plates, full alpha
+  });
+  // City NAMES moved to the screen-space text layer (kuTexts in kuLoop) —
+  // baked text could not survive the camera's CSS upscale at zoom.
+}
+
+function kuPhaseShow(ph) {
+  var el = document.getElementById('ku-phase');
+  if (!ph || !ph.n) { el.textContent = ''; return; }
+  el._ph = ph;
+}
+function kuPhaseTick(now) {
+  var el = document.getElementById('ku-phase');
+  var ph = el._ph;
+  if (!ph) return;
+  var left = Math.max(0, ph.end - (now + kuOff)) / 1000;
+  var mm = Math.floor(left / 60), ss = Math.floor(left % 60);
+  el.textContent = ph.n + ' · ' + mm + ':' + (ss < 10 ? '0' : '') + ss;
+}
+
+// ---- screen-space text layer -------------------------------------------------
+// Every label on the board draws here, at DEVICE pixels: the bake canvases
+// live inside the CSS-transformed camera, so zooming scales their bitmap and
+// 8 px baked text smears into mush ("lúc zoom map lên chữ mờ", 2026-10-07).
+// This canvas is stage-sized, never transformed — kuPX/kuPY map a bake-space
+// point to it, and every font size is the OLD bake size × kuTpx, so labels
+// land pixel-identical, just sharp at any zoom.
+function kuTextSpace() {
+  var W = kuStage.clientWidth, H = kuStage.clientHeight;
+  if (!W || !H) return null;
+  var dpr = window.devicePixelRatio || 1;
+  var bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+  if (kuTx.width !== bw || kuTx.height !== bh) { kuTx.width = bw; kuTx.height = bh; }
+  var c = kuTx.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, W, H);
+  return c;
+}
+
+// ---- animation loop: fight dots, owner tags, marches, badges -----------------
+function kuLoop() {
+  requestAnimationFrame(kuLoop);
+  if (document.hidden || !kuScene) return;
+  kuPhaseTick(Date.now());
+  // Idle-skip (zoom-out "giật giật" fix): redraw the bake-sized co layer +
+  // screen-space text only while something ANIMATES (selection pulse, fight
+  // pulse, a march in flight) or a state change flagged kuAnimDirty.
+  var f = kuFrame;
+  var anim = !!kuSelPos;
+  if (!anim && f && !f.idle && !f.err) {
+    var nowA = Date.now() + kuOff;
+    var rts = (f.ku && f.ku.routes) || [];
+    for (var ai = 0; ai < rts.length && !anim; ai++) {
+      var adur = rts[ai].ar - rts[ai].t;
+      if (adur > 0) { var apr = (nowA - rts[ai].t) / adur; if (apr >= 0 && apr < 1) anim = true; }
+    }
+    if (!anim) {
+      var cls = (f.ku && f.ku.cells) || [];
+      for (var bi = 0; bi < cls.length; bi++) if (cls[bi].f) { anim = true; break; }
+    }
+    if (!anim) {
+      var ctsc = f.cities || [];
+      for (var di = 0; di < ctsc.length; di++) if (ctsc[di].fight) { anim = true; break; }
+    }
+  }
+  if (!anim && !kuAnimDirty) return;
+  kuAnimDirty = false;
+  var sc = kuScene, c = kuCo.getContext('2d');
+  var k = kuCo.width / sc.box[2];
+  c.clearRect(0, 0, kuCo.width, kuCo.height);
+  var tc = kuTextSpace(), small = Math.max(8, Math.round(11 * k));
+  if (tc) {
+    var cw = kuGmc.clientWidth;
+    kuTpx = cw && kuCo.width ? kuCam.s * cw / kuCo.width : 0;
+    kuTox = kuGmc.offsetLeft + kuCam.tx;
+    kuToy = kuGmc.offsetTop + kuCam.ty;
+    if (kuTpx > 0) {
+      tc.font = (small * kuTpx) + 'px system-ui, sans-serif';
+      tc.textAlign = 'center'; tc.textBaseline = 'top';
+      tc.fillStyle = '#ebebeb';
+      sc.cities.forEach(function (ci) {
+        var p = kuTC(ci.tx, ci.ty); // plate bottom = anchor (+ boff on cell-centred
+        tc.fillText(ci.name || String(ci.id), kuPX(p[0] * k), kuPY(p[1] * k + (ci.boff || 0) + 2 + small)); // north boards)
+      });
+    }
+  }
+  // Selected tile: pulsing green diamond — the game lights the tile so the
+  // player sees the tap landed. Drawn before the feed guard: a tap must
+  // always answer, even while the board feed is idle.
+  if (kuSelPos) {
+    var pulse = 0.55 + 0.45 * Math.sin(Date.now() / 1200 * 6.2832);
+    var gp = kuPosPt(kuSelPos);
+    kuDiamond(c, gp[0] * k, gp[1] * k, sc.hw * k, sc.hh * k);
+    c.fillStyle = 'rgba(120,255,150,' + (0.10 + 0.10 * pulse).toFixed(3) + ')';
+    c.fill();
+    c.strokeStyle = 'rgba(160,255,180,' + (0.55 + 0.40 * pulse).toFixed(3) + ')';
+    c.lineWidth = Math.max(2, 2.5 * k);
+    c.stroke();
+  }
+  // Standing armies (Fix "chỉ thấy mình"): every player the 219903 window
+  // reports on a tile gets a union-coloured dot at the cell CENTRE — own side
+  // green (the server marks them o=true; a displayInfo only carries raw
+  // unionId, so the side is decided where both unions are known), everyone
+  // else red. A ring fans out when several share a tile; ≥2 more than the
+  // drawn dots shows as ×N. Dots stay on the bake layer; the nameplate goes
+  // to the screen-space text layer (crisp at any zoom).
+  var vKeys = Object.keys(kuView.cells);
+  if (vKeys.length) {
+    var dotR = Math.max(2.5, 4.5 * k);
+    vKeys.forEach(function (vk) {
+      var list = kuView.cells[vk];
+      if (!list || !list.length) return;
+      var pp = kuPosPt(+vk), cx = pp[0] * k, cy = pp[1] * k;
+      var n = Math.min(list.length, 7);
+      for (var qi = 0; qi < n; qi++) {
+        var qxx = cx, qyy = cy;
+        if (n > 1) {
+          var ang = qi / n * 6.2832 - Math.PI / 2;
+          qxx += Math.cos(ang) * dotR * 1.9; qyy += Math.sin(ang) * dotR * 1.9;
+        }
+        c.fillStyle = list[qi].o ? KU_GREEN : KU_RED;
+        c.beginPath(); c.arc(qxx, qyy, dotR, 0, 6.2832); c.fill();
+        c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = Math.max(1, 1.2 * k); c.stroke();
+      }
+      var nm = list[0].n || ('người ' + list[0].u);
+      if (list.length > n) nm += ' ×' + list.length;
+      if (tc && kuTpx > 0) {
+        var fsS = Math.max(8, 10 * k) * kuTpx;
+        tc.font = fsS + 'px system-ui, sans-serif';
+        tc.textAlign = 'center'; tc.textBaseline = 'top';
+        var twS = tc.measureText(nm).width;
+        tc.fillStyle = 'rgba(8,12,20,.66)';
+        tc.fillRect(kuPX(cx) - twS / 2 - 4 * k * kuTpx, kuPY(cy + dotR + 2),
+          twS + 8 * k * kuTpx, fsS + 4 * k * kuTpx);
+        tc.fillStyle = list[0].o ? '#b8f2c8' : '#f2c2bd';
+        tc.fillText(nm, kuPX(cx), kuPY(cy + dotR + 2 + 2 * k));
+      }
+    });
+  }
+  if (!f || f.idle || f.err) return;
+  var now = Date.now() + kuOff;
+  var cityLive = {};
+  (f.cities || []).forEach(function (ci) { cityLive[ci.id] = ci; });
+
+  // Owner tags (team-coloured: own union green, others red) + combat
+  // markers. ⚔ = a fight is happening THERE right now: city-level from
+  // MiniCityInfo.haveFight and block-level from MiniCellInfo.haveFight
+  // (both ship in the same 219919 pull — this is where OTHER players are
+  // fighting, not an extrapolation).
+  var fightPts = [];
+  if (tc && kuTpx > 0) {
+    tc.font = (small * kuTpx) + 'px system-ui, sans-serif';
+    tc.textAlign = 'center'; tc.textBaseline = 'top';
+    sc.cities.forEach(function (ci) {
+      var fc = cityLive[ci.id];
+      var p = kuTC(ci.tx, ci.ty), x = p[0] * k, y = p[1] * k; // raised plate: anchor = bottom edge
+      if (fc && fc.fight) fightPts.push([x, y]);
+      if (fc && fc.owner && fc.color) {
+        tc.fillStyle = (fc.ci === undefined || fc.ci === null)
+          ? fc.color : (kuSlotOwn(fc.ci) ? KU_GREEN : KU_RED);
+        tc.fillText('[' + fc.owner + ']', kuPX(x), kuPY(y + 2 + small + small + 4)); // under the name line
+      }
+    });
+  } else {
+    sc.cities.forEach(function (ci) {
+      var fc = cityLive[ci.id];
+      if (fc && fc.fight) { var p = kuTC(ci.tx, ci.ty); fightPts.push([p[0] * k, p[1] * k]); }
+    });
+  }
+  ((f.ku && f.ku.cells) || []).forEach(function (cl) {
+    if (!cl.f) return;
+    var p = kuPosPt(cl.p);
+    fightPts.push([p[0] * k, p[1] * k]);
+  });
+  if (fightPts.length && tc && kuTpx > 0) {
+    var fp = 0.65 + 0.35 * Math.sin(Date.now() / 700 * 6.2832);
+    tc.font = ((small + 4) * kuTpx) + 'px system-ui, sans-serif';
+    tc.textAlign = 'center'; tc.textBaseline = 'top';
+    tc.fillStyle = 'rgba(255,210,77,' + (0.55 + 0.45 * fp).toFixed(3) + ')';
+    fightPts.forEach(function (pt) {
+      tc.fillText('⚔', kuPX(pt[0]), kuPY(pt[1] - sc.hh * k - small - 8));
+    });
+  }
+
+  // Marches: LineItem — ribbon ANCHORED AT DESTINATION, tail toward origin,
+  // height = dist·(1−elapsed/total); badge = PlayerItem linear position.
+  var routes = (f.ku && f.ku.routes) || [];
+  routes.forEach(function (r) {
+    var dur = r.ar - r.t;
+    if (dur <= 0) return;
+    var pr = (now - r.t) / dur;
+    if (pr < 0) pr = 0;
+    if (pr >= 1) return;
+    var pt = kuPosPt(r.tp), pf = kuPosPt(r.fp);
+    var xt = pt[0] * k, yt = pt[1] * k, xf = pf[0] * k, yf = pf[1] * k;
+    var dist = Math.hypot(xf - xt, yf - yt);
+    var len = dist * (1 - pr);
+    var im = kuLineImgs[(r.k || 1) - 1] || kuLineImgs[0];
+    if (im && len > 1) {
+      c.save();
+      c.translate(xt, yt);
+      c.rotate(Math.atan2(yf - yt, xf - xt) - Math.PI / 2); // local +Y points tail-ward (from)
+      var tw = im.naturalWidth, th = im.naturalHeight, lenW = len / k; // tiles live in world px
+      for (var yy = 0; yy < lenW; yy += th) {
+        var sh = Math.min(th, lenW - yy); // head-anchored: sprite top = destination
+        c.drawImage(im, 0, 0, tw, sh, -tw * k / 2, yy * k, tw * k, sh * k);
+      }
+      c.restore();
+    }
+    var bx = xf + (xt - xf) * pr, by = yf + (yt - yf) * pr;
+    var col = r.s >= 0 && sc.palette[r.s % sc.palette.length] ? sc.palette[r.s % sc.palette.length] : '#ffffff';
+    c.fillStyle = col;
+    c.beginPath(); c.arc(bx, by, Math.max(4, 7 * k), 0, 6.2832); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = Math.max(1, 1.5 * k); c.stroke();
+    // Every march carries a floating nameplate like the game's PlayerItem:
+    // union-coloured dot + dark chip + (own march: arrival countdown).
+    var lab = r.n || '';
+    if (r.k === 2) {
+      var sec = Math.ceil((r.ar - now) / 1000);
+      lab = (lab ? lab + ' ' : 'bạn ') + sec + 's';
+    }
+    if (lab && tc && kuTpx > 0) {
+      var fs = Math.max(9, 12 * k) * kuTpx;
+      tc.save();
+      tc.font = fs + 'px system-ui, sans-serif';
+      tc.textAlign = 'center';
+      tc.textBaseline = 'top';
+      var ly = by - Math.max(4, 7 * k) - fs / kuTpx - 3; // bake-space chip anchor (as before)
+      var tw2 = tc.measureText(lab).width;
+      tc.fillStyle = 'rgba(8,12,20,.72)';
+      tc.fillRect(kuPX(bx) - tw2 / 2 - 5 * k * kuTpx, kuPY(ly - 2 * k),
+        tw2 + 10 * k * kuTpx, fs + 6 * k * kuTpx);
+      tc.fillStyle = '#ebebeb';
+      tc.fillText(lab, kuPX(bx), kuPY(ly) + fs);
+      tc.restore();
+    }
+  });
+}
+
+// ---- minimap ------------------------------------------------------------------
+function kuMiniDraw() {
+  var cv = document.getElementById('ku-mini');
+  if (!kuScene || !kuMiniImg) return;
+  var sc = kuScene;
+  var MW = 132, MH = Math.round(MW * sc.box[3] / sc.box[2]);
+  kuSetSize(cv, MW, MH);
+  cv.style.height = MH + 'px';
+  var c = cv.getContext('2d');
+  c.clearRect(0, 0, MW, MH);
+  c.drawImage(kuMiniImg, 0, 0, MW, MH);
+  var kx = MW / sc.box[2], ky = MH / sc.box[3];
+  var f = kuFrame;
+  if (f && f.ku && f.ku.cells) {
+    f.ku.cells.forEach(function (cl) {
+      var p = kuPosPt(cl.p);
+      // Team colours like the main board; s<0 contested tile / f fight = gold.
+      c.fillStyle = cl.s < 0 || cl.f ? '#ffd24d' : (kuSlotOwn(cl.s) ? KU_GREEN : KU_RED);
+      c.fillRect(p[0] * kx - 1, p[1] * ky - 1, 2, 2);
+    });
+  }
+  // Viewport rectangle = the box fraction currently under the camera.
+  // Cover-fit aware: the visible area is the STAGE (the box may overflow it),
+  // and the CSS offsets from kuResize fold into the box-space origin.
+  var gw = kuGmc.clientWidth, gh = kuGmc.clientHeight;
+  var W = kuStage.clientWidth, H = kuStage.clientHeight;
+  var ofx = parseFloat(kuGmc.style.left) || 0, ofy = parseFloat(kuGmc.style.top) || 0;
+  if (gw && gh && W && H) {
+    c.strokeStyle = '#ffd76e'; c.lineWidth = 1;
+    c.strokeRect((-ofx - kuCam.tx) / kuCam.s / gw * MW, (-ofy - kuCam.ty) / kuCam.s / gh * MH,
+      (W / kuCam.s) / gw * MW, (H / kuCam.s) / gh * MH);
+  }
+  cv._kx = kx; cv._ky = ky;
+}
+document.getElementById('ku-mini').addEventListener('click', function (e) {
+  if (!kuScene) return;
+  var r = this.getBoundingClientRect();
+  var bx = (e.clientX - r.left) / r.width * kuScene.box[2],
+      by = (e.clientY - r.top) / r.height * kuScene.box[3];
+  var gw = kuGmc.clientWidth, gh = kuGmc.clientHeight;
+  var offx = parseFloat(kuGmc.style.left) || 0, offy = parseFloat(kuGmc.style.top) || 0;
+  kuCam.tx = kuStage.clientWidth / 2 - offx - kuCam.s * bx / kuScene.box[2] * gw;
+  kuCam.ty = kuStage.clientHeight / 2 - offy - kuCam.s * by / kuScene.box[3] * gh;
+  kuClampCam(); kuApplyCam();
+});
+
+// ---- tap → block panel ---------------------------------------------------------
+// giKuCellAt ported: inverse of the client projection, gid {1,2,4} only.
+function kuCellAt(e) {
+  var r = kuStage.getBoundingClientRect();
+  var gx = kuGmc.getBoundingClientRect();
+  var nx = (e.clientX - gx.left) / gx.width, ny = (e.clientY - gx.top) / gx.height;
+  if (nx < -0.02 || nx > 1.02 || ny < -0.02 || ny > 1.02) return null;
+  nx = Math.min(1, Math.max(0, nx)); ny = Math.min(1, Math.max(0, ny));
+  var sc = kuScene;
+  var u = (sc.box[0] + nx * sc.box[2] - (sc.col - 1) * sc.hw) / sc.hw; // tx − ty
+  var v = (sc.box[1] + ny * sc.box[3]) / sc.hh - 1; // nearest cell CENTRE, see kuCC
+  var tx = Math.round((u + v) / 2), ty = Math.round((v - u) / 2);
+  if (tx < 0 || ty < 0 || tx >= sc.col || ty >= sc.row) return null;
+  var gid = sc.grid.charCodeAt(ty * sc.col + tx) - 48;
+  if (gid !== 1 && gid !== 2 && gid !== 4) return null;
+  return { tx: tx, ty: ty, pos: ty * sc.col + tx, x: nx, y: ny };
+}
+
+var kuPopFor = null;
+var kuSelPos = 0, kuFanDown = false;   // selected tile → glow + radial menu
+
+function kuKu() { return (kuFrame && kuFrame.ku) || {}; }
+function kuStandingAt(pos) {
+  var m = kuKu().mine || [];
+  for (var i = 0; i < m.length; i++) if (m[i] === pos) return true;
+  return false;
+}
+function kuOwnCellAt(pos) {
+  var own = kuKu().myslots || [], cells = kuKu().cells || [];
+  for (var i = 0; i < cells.length; i++) {
+    if (cells[i].p !== pos) continue;
+    for (var j = 0; j < own.length; j++) if (own[j] === cells[i].s) return true;
+  }
+  return false;
+}
+// Tile CENTRE → stage px (box fraction × the camera rect — follows zoom/pan).
+function kuCellScreen(pos) {
+  var gx = kuGmc.getBoundingClientRect(), sr = kuStage.getBoundingClientRect();
+  var p = kuPosPt(pos), sc = kuScene;
+  return { x: gx.left - sr.left + p[0] / sc.box[2] * gx.width,
+           y: gx.top - sr.top + p[1] / sc.box[3] * gx.height };
+}
+function kuFanGeom() {
+  var pt = kuCellScreen(kuSelPos), sr = kuStage.getBoundingClientRect(), R = 60;
+  kuFanDown = pt.y < R + 74; // near the top edge → the fan flips below the tile
+  pt.x = Math.min(Math.max(pt.x, R + 34), sr.width - R - 34);
+  return { pt: pt, R: R };
+}
+function kuFanPlace() {
+  var fan = document.getElementById('ku-fan');
+  if (!fan || !kuSelPos) return;
+  var g = kuFanGeom(), n = fan.children.length;
+  fan.style.left = g.pt.x.toFixed(1) + 'px';
+  fan.style.top = g.pt.y.toFixed(1) + 'px';
+  for (var i = 0; i < n; i++) {
+    // Arc from 150° to 30° (up-side); n=1 sits straight above/below.
+    var ang = n === 1 ? Math.PI / 2 : Math.PI * (5 / 6 - (i / (n - 1)) * (2 / 3));
+    var sgn = kuFanDown ? 1 : -1;
+    fan.children[i].style.left = (Math.cos(ang) * g.R).toFixed(1) + 'px';
+    fan.children[i].style.top = (sgn * Math.sin(ang) * g.R).toFixed(1) + 'px';
+  }
+}
+function kuOpenPop(hit) {
+  kuPopFor = hit;
+  kuSelPos = hit.pos;          // the glow keys off pos, not the tap point
+  kuAnimDirty = true;
+  kuPopRender();
+  document.getElementById('ku-fan').style.display = 'block';
+  document.getElementById('ku-pop').style.display = 'block';
+  try { Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch (e) { }
+}
+function kuPopRender() {
+  var pop = document.getElementById('ku-pop'), hit = kuPopFor, sc = kuScene;
+  pop.innerHTML = '';
+  var city = kuCityAtPos[hit.pos], fc = null;
+  if (city && kuFrame && kuFrame.cities) {
+    kuFrame.cities.forEach(function (c) { if (c.id === city.id) fc = c; });
+  }
+  var h = document.createElement('div'); h.className = 'tk-hd';
+  var col = document.createElement('div'); col.className = 'tk-hc';
+  if (fc && fc.owner) {
+    var rib = document.createElement('span'); rib.className = 'tk-rib'; rib.textContent = fc.owner;
+    if (fc.color) { rib.style.borderColor = fc.color; rib.style.color = fc.color; }
+    col.appendChild(rib);
+  }
+  var bn = document.createElement('b');
+  bn.textContent = city ? (city.name || ('Thành ' + city.id)) : ('Ô (' + hit.tx + ', ' + hit.ty + ')');
+  col.appendChild(bn);
+  h.appendChild(col);
+  if (city) {
+    var rk = document.createElement('span'); rk.className = 'tk-chip';
+    rk.textContent = 'Hạng ' + city.rank; h.appendChild(rk);
+  }
+  if (fc && fc.fight) {
+    var fp = document.createElement('span'); fp.className = 'tk-chip f'; fp.textContent = '⚔'; h.appendChild(fp);
+  }
+  // Real HP from the view-window pull (219903 cityInfo) — the SSE minimap
+  // frame never carries HP numbers, this chip only exists once they do.
+  var vc = city ? kuView.cities[String(city.id)] : null;
+  if (vc) {
+    var hpc = document.createElement('span'); hpc.className = 'tk-chip';
+    hpc.textContent = (vc.dead ? '💥 ' : '❤ ') + (vc.cur || 0) + '/' + (vc.hp || 0);
+    h.appendChild(hpc);
+  }
+  pop.appendChild(h);
+  var standing = kuStandingAt(hit.pos), own = kuOwnCellAt(hit.pos);
+  var sub = standing ? 'Quân của bạn đang đứng ở đây' :
+    (own ? 'Ô đã chiếm — quân mình' :
+      (city ? (fc && fc.owner ? '' : 'Chưa chiếm') : ('Ô sàn · vị trí ' + hit.pos)));
+  if (sub) {
+    var o = document.createElement('div'); o.className = 'o'; o.textContent = sub; pop.appendChild(o);
+  }
+  // "Ô còn bao nhiêu HP / đã chiếm chưa": a floor tile has no hp field — the
+  // game's cell bar is per-union occupyProgress vs max = 10·OCCUPY_AREA_COST
+  // (from the leader's 21003 config; max=0 → show raw, no verdict).
+  var pgs = kuView.prog[String(hit.pos)];
+  if (pgs && pgs.length) {
+    var mx = kuView.max || 0;
+    for (var gi = 0; gi < Math.min(pgs.length, 3); gi++) { // user: list dài quá → show ít thôi
+      var pr = pgs[gi];
+      var d = document.createElement('div'); d.className = 'mv';
+      var txt = '🚩 Chiếm ' + pr.p + (mx ? '/' + mx : '');
+      if (mx) txt += pr.p >= mx ? ' · ĐÃ CHIẾM' : ' · ' + Math.floor(pr.p / mx * 100) + '%';
+      d.textContent = txt;
+      pop.appendChild(d);
+    }
+    if (pgs.length > 3) {
+      var dpm = document.createElement('div'); dpm.className = 'mv';
+      dpm.textContent = '… và ' + (pgs.length - 3) + ' bang khác';
+      pop.appendChild(dpm);
+    }
+  }
+  // "đang hành quân" rows: live ledger touching this cell.
+  if (kuFrame && kuFrame.ku && kuFrame.ku.routes) {
+    var mrs = kuFrame.ku.routes.filter(function (r) { return r.fp === hit.pos || r.tp === hit.pos; });
+    for (var ri = 0; ri < Math.min(mrs.length, 4); ri++) { // cap: nhiều đoàn bay vào một ô
+      var r = mrs[ri];
+      var d = document.createElement('div'); d.className = 'mv';
+      d.textContent = (r.k === 2 ? '🏃 bạn' : (r.n ? '🏃 ' + r.n : '🏃 hành quân')) +
+        ' → ô ' + r.tp;
+      pop.appendChild(d);
+    }
+    if (mrs.length > 4) {
+      var drm = document.createElement('div'); drm.className = 'mv';
+      drm.textContent = '… và ' + (mrs.length - 4) + ' đoàn khác';
+      pop.appendChild(drm);
+    }
+  }
+  // Quân ĐANG ĐỨNG trên ô — view-window pull (219903 displayInfo) with the
+  // nicknames; the SSE minimap frame never carries who stands where.
+  var stq = kuView.cells[String(hit.pos)] || [];
+  for (var si = 0; si < Math.min(stq.length, 4); si++) { // user: show ít thôi
+    var pp = stq[si], dd = document.createElement('div'); dd.className = 'mv';
+    dd.textContent = '🧍 ' + (pp.n || ('người ' + pp.u)) + (pp.p ? ' · LC ' + pp.p : '');
+    pop.appendChild(dd);
+  }
+  if (stq.length > 4) {
+    var more = document.createElement('div'); more.className = 'mv';
+    more.textContent = '… và ' + (stq.length - 4) + ' người khác';
+    pop.appendChild(more);
+  }
+  // Radial ink menu — user directive 2026-10-07: EVERY cell click offers the
+  // FULL fan (Hành Quân / Khám Phá / Càn Quét); no standing-position rules
+  // client-side or server-side in our gate — each running account receives
+  // all orders and the SERVER judges (verdict per account in its log).
+  var fan = document.getElementById('ku-fan');
+  fan.innerHTML = '';
+  var noun = city ? (city.name || ('thành ' + city.id)) : ('ô (' + hit.tx + ',' + hit.ty + ')');
+  var acts = [[city && fc && fc.owner ? 'attack' : 'march', 'Hành Quân', false],
+    ['explore', 'Khám Phá', false], ['sweep', 'Càn Quét', true]];
+  acts.forEach(function (a) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ku-fb' + (a[2] ? ' a' : '');
+    b.textContent = a[1];
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      kuOrder(a[0], hit.pos, noun, a[1]);
+    });
+    fan.appendChild(b);
+  });
+  kuFanPlace();
+  kuPopPlace();
+}
+function kuPopPlace() {
+  var pop = document.getElementById('ku-pop');
+  if (!kuPopFor || !kuSelPos) return;
+  var g = kuFanGeom(), sr = kuStage.getBoundingClientRect(), off = g.R + 10;
+  var y = kuFanDown ? g.pt.y - off - pop.offsetHeight : g.pt.y + off;
+  pop.style.left = Math.min(sr.width - pop.offsetWidth - 8, Math.max(8, g.pt.x - pop.offsetWidth / 2)).toFixed(1) + 'px';
+  pop.style.top = Math.min(sr.height - pop.offsetHeight - 8, Math.max(8, y)).toFixed(1) + 'px';
+}
+function kuClosePop() {
+  kuPopFor = null;
+  kuSelPos = 0;
+  kuAnimDirty = true; // one repaint must clear the frozen selection pulse
+  document.getElementById('ku-pop').style.display = 'none';
+  document.getElementById('ku-fan').style.display = 'none';
+}
+function kuOrder(act, pos, noun, label) {
+  // No confirm alert (owner 2026-10-19): the tap IS the decision.
+  var f = document.createElement('form');
+  f.method = 'post'; f.action = '/events/order';
+  f.setAttribute('data-live', '1'); // layout interceptor: fetch + toast, no reload
+  var vals = { csrf: KU_CSRF, which: 'bacminh', act: act, arg: String(pos) };
+  Object.keys(vals).forEach(function (n) {
+    var i = document.createElement('input');
+    i.type = 'hidden'; i.name = n; i.value = vals[n];
+    f.appendChild(i);
+  });
+  document.body.appendChild(f);
+  if (f.requestSubmit) f.requestSubmit(); else f.submit();
+  // "Mỗi lần khám phá phải update lại trạng thái ô": skip the pan-debounce and
+  // re-pull this window a few seconds after the order lands, so the popup and
+  // the tint show the new occupyProgress/standing without a manual pan.
+  setTimeout(function () { kuMapView(true); }, 2500);
+}
+// Army-level HUD orders — no tile arg (server ignores it for these acts).
+function kuHudOrder(act, confirmMsg) {
+  // confirmMsg accepted and ignored — no confirm alerts on orders (owner 2026-10-19).
+  var f = document.createElement('form');
+  f.method = 'post'; f.action = '/events/order';
+  f.setAttribute('data-live', '1');
+  var vals = { csrf: KU_CSRF, which: 'bacminh', act: act };
+  Object.keys(vals).forEach(function (n) {
+    var i = document.createElement('input');
+    i.type = 'hidden'; i.name = n; i.value = vals[n];
+    f.appendChild(i);
+  });
+  document.body.appendChild(f);
+  if (f.requestSubmit) f.requestSubmit(); else f.submit();
+}
+
+// ---- pointer camera + taps ------------------------------------------------------
+function kuAttachCam() {
+  var pts = {}, moved = 0, t0 = 0, pinchD = 0;
+  var count = function () { return Object.keys(pts).length; };
+  kuStage.addEventListener('pointerdown', function (e) {
+    if (e.target.closest('.ku-pop') || e.target.closest('.ku-fan') || e.target.closest('.ku-zoom') || e.target.closest('.ku-hud') || e.target.closest('.ku-mini')) return;
+    if (!count()) { moved = 0; t0 = Date.now(); kuDragged = false; }
+    pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+    try { kuStage.setPointerCapture(e.pointerId); } catch (err) { }
+    if (count() === 2) {
+      var p = Object.keys(pts).map(function (key) { return pts[key]; });
+      pinchD = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+      moved = 99; kuDragged = true;
+    }
+  });
+  kuStage.addEventListener('pointermove', function (e) {
+    if (!pts[e.pointerId]) return;
+    var p = pts[e.pointerId], dx = e.clientX - p.x, dy = e.clientY - p.y;
+    // Incremental delta — without advancing the stored point the map raced
+    // ahead of the finger (dx kept accumulating from the original press).
+    p.x = e.clientX; p.y = e.clientY;
+    if (count() >= 2) {
+      var kk = Object.keys(pts), a = pts[kk[0]], b = pts[kk[1]];
+      var d = Math.hypot(a.x - b.x, a.y - b.y);
+      var r = kuStage.getBoundingClientRect();
+      if (pinchD > 0 && d > 0) kuZoomAt((a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top, d / pinchD);
+      pinchD = d; moved = 99; kuDragged = true;
+    } else {
+      moved += Math.abs(dx) + Math.abs(dy);
+      if (moved > 8) kuDragged = true;
+      kuCam.tx += dx; kuCam.ty += dy;
+      kuClampCam(); kuApplyCam();
+    }
+  });
+  var up = function (e) {
+    if (!pts[e.pointerId]) return;
+    delete pts[e.pointerId];
+    pinchD = 0;
+    if (!count() && !kuDragged && Date.now() - t0 < 300) {
+      if (Date.now() - kuCam.lastTap < 300) { kuResetCam(); kuCam.lastTap = 0; }
+      else kuCam.lastTap = Date.now();
+    }
+  };
+  kuStage.addEventListener('pointerup', up);
+  kuStage.addEventListener('pointercancel', up);
+  kuStage.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var r = kuStage.getBoundingClientRect();
+    kuZoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.002));
+    kuDragged = true;
+  }, { passive: false });
+  kuStage.addEventListener('dblclick', function (e) {
+    if (!e.target.closest('.ku-pop') && !e.target.closest('.ku-fan')) kuResetCam();
+  });
+  kuStage.addEventListener('click', function (e) {
+    if (kuDragged || e.target.closest('.ku-pop') || e.target.closest('.ku-fan') || e.target.closest('.ku-zoom') || e.target.closest('.ku-mini')) return;
+    var hit = kuCellAt(e);
+    if (hit) kuOpenPop(hit); else kuClosePop();
+  });
+  document.getElementById('ku-zin').addEventListener('click', function (e) {
+    e.stopPropagation(); kuZoomAt(kuStage.clientWidth / 2, kuStage.clientHeight / 2, 1.5);
+  });
+  document.getElementById('ku-zout').addEventListener('click', function (e) {
+    e.stopPropagation(); kuZoomAt(kuStage.clientWidth / 2, kuStage.clientHeight / 2, 1 / 1.5);
+  });
+  document.getElementById('ku-fit').addEventListener('click', function (e) {
+    e.stopPropagation(); kuResetCam();
+  });
+  document.getElementById('ku-boost').addEventListener('click', function (e) {
+    e.stopPropagation();
+    kuHudOrder('tangtoc', ''); // user directive 2026-10-07: Bắc Minh tăng tốc BẤM THẲNG không hỏi (server trừ item accel trước, hết mới trừ ngọc)
+  });
+  document.getElementById('ku-rev').addEventListener('click', function (e) {
+    e.stopPropagation();
+    kuHudOrder('hoisinh_item', 'DÙNG VẬT PHẨM hồi sinh NGAY cho mọi acc sự kiện đang chết ở Bắc Minh?');
+  });
+  // 🍈Hái quả button REMOVED (user 2026-10-07: "cái đó nằm trong loop chứ
+  // cần gì nút bấm") — bmTreeTick already claims 219911 automatically every
+  // 60s when canReceive=1. The 'quat' order act stays server-side (harmless).
+  document.getElementById('ku-eat').addEventListener('click', function (e) {
+    e.stopPropagation();
+    // Rule 2026-10-07: acc <10 NL mới cắn, đủ 10 thì thôi (server tính theo energy từng acc).
+    kuHudOrder('anqua', ''); // user directive 2026-10-07: cắn quả BẤM THẲNG không hỏi
+  });
+  window.addEventListener('resize', kuResize);
+}
+
+function kuSub(on) {
+  fetch('/events/mapsub?which=bacminh&on=' + on, { credentials: 'same-origin' }).catch(function () { });
+}
+
+kuGmc = document.getElementById('ku-cam');
+kuStage = document.getElementById('ku-stage');
+kuC1 = document.getElementById('ku-c1'); kuCt = document.getElementById('ku-ct');
+kuCo = document.getElementById('ku-co');
+kuTx = document.getElementById('ku-text');
+kuAttachCam();
+kuBoot();
+</script>
+{{end}}

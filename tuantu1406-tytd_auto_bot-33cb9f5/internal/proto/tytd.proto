@@ -1,0 +1,5029 @@
+syntax = "proto3";
+
+package proto;
+option go_package = ".;proto";
+
+message Auth {
+  string token = 1;         // "N9CtwdADoIRvPw5McjF-l"
+  string locale = 2;     // "vi_vn"
+  optional bool status = 3;      // 0
+}
+
+message GiftList {
+  repeated GiftEntry entries = 1;
+}
+
+message GiftEntry {
+  string gift_code = 1; // e.g. "PALACE-GIFT-710550-71055065276-oixwd"
+  int32 gift_type = 7;
+}
+
+message GiftCode {
+  string code = 1;      // "PALACE-GIFT-710395-71039566089-hunfv"
+  bool status = 2;     // 1 (e.g., active)
+  int32 type = 3;       // 1 (e.g., category or kind of gift)
+}
+
+message SubMessage {
+  int32 subfield1 = 1;
+  int32 subfield2 = 2;
+}
+
+message VedaoEND {
+  uint64 id = 1;
+  bool win = 2;
+  int32 count = 3;
+  int32 category = 4;
+  int32 level = 5;
+  int32 score = 6;
+  int32 lacqua = 7;
+  int32 modifier = 8;
+}
+
+message VedaoInfo3 {
+  int32 item = 1;
+  int32 level = 2;
+}
+
+message VedaoInfo2 {
+  repeated VedaoInfo3 info = 3;
+  int32 level = 4;
+  int32 loz_gi_deo_biet = 6;
+}
+
+message VedaoInfo1 {
+  VedaoInfo2 info = 1;
+}
+
+message VedaoInfo {
+  VedaoInfo1 info = 2;
+}
+
+message VedaoStart {
+  uint64 id = 1;
+}
+
+////player info
+
+message PlayerInfo {
+  int64 uid = 1;                // 1000000000000
+  string unicode_str = 2;             // "✢★✢Lẹnhlüng"
+}
+
+
+//// phuc dia
+
+
+message List1PhucDiaItem {
+  uint64 uid = 1;
+}
+
+message MouseInfo {
+  int32 free = 1;
+  int32 total = 2;
+  int32 hp = 3;
+}
+
+
+message NguoiKeoInfo {
+  fixed64 timestamp = 1;                  // e.g., 0xA4ABD4D98802 (1111111111111)
+  string unicode_str = 2;                 // "✢★✢Lẹnhlüng"
+  int32 version = 3;                      // 0xABB107 (123456)
+  int32 status = 4;                       // Usually 1
+  int32 type = 5;                         // Usually 1
+  bytes empty_data = 6;
+  MetadataExtension extension = 7;
+}
+
+message MetadataExtension {
+  fixed64 timestamp = 1;
+  int32 version = 2;
+  bytes empty_field = 3;
+  int32 status = 4;
+  int32 type = 5;
+}
+
+message PhucDiaItem {
+  string item = 1;                          // e.g., "100029=1", "100004=3"
+  int32 entry_type = 2;                   // Values: 1, 2, 4
+  int64 timestamp_offset = 3;              // Varint (sometimes negative)
+  int32 offset = 4;                       // Values 0-5
+  //  int32 category = 5;                     // Usually 3, sometimes 4
+  //  int32 flags = 6;                        // Always 0 in this data
+  //  oneof timestamp_data {
+  //    fixed64 fixed_timestamp = 7;          // When no metadata
+  //    NguoiKeoInfo metadata = 8;           // Present in entries 2 and 6
+  //  }
+  //  int32 final_flag = 9;                   // Always 0
+}
+
+message PhucDiaInfo {
+  bool oke = 1;
+  repeated PhucDiaItem entries = 2;         // 6 entries in this data
+  int64 main_timestamp = 3;               // 0x80DBFAF18A33 (varint)
+  //GlobalMetadata global_metadata = 4;
+  //int64 received_timestamp = 6;
+}
+
+message MyPhucDiaInfo {
+  PhucDiaInfo info = 1;
+}
+
+message GlobalMetadata {
+  fixed64 timestamp = 1;
+  string unicode_str = 2;                 // "✢★✢Lẹnhlüng"
+  int32 version = 3;                      // 123456
+  bytes empty_field1 = 4;
+  MetadataExtension extension = 5;
+  int32 status_byte = 6;                  // 0xC4
+  int32 type_byte = 7;                    // 0xC5
+  int32 additional_flags = 8;             // 0x00
+}
+
+message ChuPhucDiaInfo {
+  uint64 id = 1;
+}
+
+message PhucDiaKhacInfo {
+  ChuPhucDiaInfo cinfo = 1;
+  repeated int32 items = 2;
+  bool dangkeo = 3;
+}
+
+message AllPhucDiaKhacInfo {
+  repeated PhucDiaKhacInfo phucdiabencanh = 1;
+  repeated PhucDiaKhacInfo phucdiadoidich = 2;
+}
+
+message AllPhucDia {
+  int32 zz = 1;
+  AllPhucDiaKhacInfo info = 2;
+}
+
+message ChayChuot {
+  uint64 id = 1;
+  optional int32 offset = 2;
+  optional bool oke = 3;
+}
+
+
+message ChuotDangKeo {
+  int32 offset = 4;
+  uint64 timestamp = 8;
+  uint64 id = 9;
+}
+
+message DanhSachChuotDangkeo {
+  repeated ChuotDangKeo entries = 1;
+}
+
+message VentureResult {
+  bool oke = 3;
+}
+
+message LucDaoStart {
+  bool oke = 1;
+}
+
+message LucDaoResult {
+  string value = 2;
+}
+
+
+message TinhTuc {
+  int64 id = 1;
+}
+
+message YeuThap {
+  int32 error = 1;
+  bool oke = 3;
+}
+
+message PickSkillYeuThap {
+  int64 skill = 1;
+}
+
+message PhanThan {
+  int32 id = 1;
+}
+
+
+message GhepDo {
+  int32 id = 1;
+  string soluong = 2;
+}
+
+message LikeTienCu {
+  uint64 id = 1;
+  bool oke = 2;
+}
+
+message BuffDao {
+  uint64 id = 1;
+}
+
+message ClanInfo {
+  uint64 id = 1;
+  string Name = 4;
+}
+
+message ClanMember {
+  uint64 id = 1;
+  string Name = 3;
+}
+
+message ClanMemberInfo {
+    ClanMember member = 1;
+    uint64 last_active = 2;
+}
+
+// Request: S_GET_CLAN_INFO (0x00005656)
+message GetClanInfo {
+  uint64 clan_id = 1;
+}
+
+// Response: SERVER_CLAN_INFO_2 (0x0836)
+message ClanInfoResponse {
+  uint32 status = 1;  // 0 = success
+  MClanInfo clan_data = 2;
+}
+
+message MClanInfo {
+    ClanInfo info = 1;
+    repeated ClanMemberInfo member = 4;
+}
+
+message ChatCay {
+  optional int32 zz = 1;
+  int32 oke =3;
+}
+
+message L3 {
+  int32 id = 1;
+}
+
+message L2 {
+  L3 l3 = 1;
+}
+
+message L1 {
+  repeated string items = 1;
+  L2 l2 = 2;
+}
+
+message  ChatCayResponse {
+  int32 error = 1;
+  repeated L1 l1 = 2;
+}
+
+message L2Khongitems {
+  int32 id = 1;
+}
+
+message L1Khongitems {
+  L2Khongitems l2 = 1;
+}
+
+message DoChuaHuyResponse {
+  int32 error = 1;
+  repeated L1Khongitems l1 = 2;
+}
+
+message HuyDoChatCay {
+  int32 oke = 1;
+  repeated int32 id =2;
+}
+
+message KhieuChienDauPhap {
+  optional int32 id = 1;
+}
+
+message GiamCay {
+  int32 var1 = 1;
+  int32 var2 = 2;
+  optional int32 var3 = 3;
+}
+
+message PhatNgoc {
+  string Msg = 1;
+}
+
+
+
+message BangTreoThuongNhiemVu {
+  optional int32 id = 1;
+}
+
+
+message BangTreoThuongInfo {
+  optional bool done = 1;
+}
+
+message QuayTinhQuaiQuangCao {
+  int32 var1 = 1;
+  int32 var2 = 2;
+  optional int32 var3 = 3;
+}
+
+// ---- God Island (đảo bất tử) event ----
+// Schemas from ../remoteBlessFrog/GOD_ISLAND_PROTOCOL.md. The game uses proto2
+// required fields; proto3 doesn't enforce them, which is fine for us. Only the
+// fields we consume are declared, everything else is skipped as unknown.
+
+// Activity config push (transport 03e9/040c): PushActivityList /
+// SyncActivityList share this layout. God Island entries have type 68
+// (333 = peak island).
+message ActivityMainConfig {
+  optional int32 activityId = 1;
+  optional int32 type = 2;
+  // Window fields from ActivityBase.decoded.proto: the client derives the
+  // activity phase (show/active/reward) from these; we store them so status
+  // checks do not need the full config push again.
+  optional int32 childType = 3;
+  optional int64 beginShowTime = 4;
+  optional int64 endShowTime = 5;
+  optional int64 beginTime = 6;
+  optional int64 endTime = 7;
+  optional int32 groupType = 9;
+}
+
+message PushActivityList {
+  repeated ActivityMainConfig mainConfig = 1;
+}
+
+message GodIslandBaseInfoReqMsg {
+  int32 activityId = 1;
+}
+
+// resp of 206801 (incoming type 1a91)
+message GodIslandBaseInfoRespMsg {
+  int32 ret = 1;
+  optional int32 activityId = 2;
+  optional int32 selfRank = 3;
+  optional int32 group = 4;
+  optional int32 floor = 5;
+  optional int64 unionId = 6;
+}
+
+message GodIslandHeartBeatReqMsg {
+  int32 activityId = 1;
+}
+
+// S_GOD_ISLAND_GAME_INFO_LOAD (206820, incoming 1aa4). Only the scalar fields
+// we consume are modeled; protobuf skips the rest (repeated/sub-messages).
+message GodIslandGameInfoReqMsg {
+  int32 activityId = 1;
+}
+
+message GodIslandGameInfoRespMsg {
+  int32 ret = 1;
+  // account's base city on this island — differs between the normal (Bồng
+  // Lai) and peak (Thiên Ma) variants, so it is cached per event.
+  optional int32 home = 2;
+  optional GodIslandGameRouteInfo myRouteInfo = 5;
+  optional bool leftout = 7;
+  optional int32 location = 8;
+  optional int32 speedUpCount = 9;
+  optional string curPower = 12;
+  optional string maxPower = 13;
+  optional int64 reviveTime = 20;
+}
+
+// My march route; presence in GodIslandGameInfoRespMsg means the unit is
+// moving (myRouteInfo != nil is the server's accelerate precondition). Only
+// the scalars we consume are modeled.
+message GodIslandGameRouteInfo {
+  optional int64 playerId = 1;
+  optional int32 fromCityId = 2;
+  optional int32 toCityId = 3;
+  optional int64 time = 4;
+  optional int64 arrival = 5;
+  optional int64 unionId = 6;
+  optional int32 currentRank = 8;
+  optional string name = 9;
+  optional bool suppressBuff = 10;
+}
+
+// S_GOD_ISLAND_GAME_ACCELERATE_MOVE (206849, incoming 1ac1)
+message GodIslandGameAcclerateMoveReqMsg {
+  int32 activityId = 1;
+  optional int32 speedUpCount = 2;
+}
+
+message GodIslandGameAcclerateMoveRespMsg {
+  int32 ret = 1;
+  optional string costInfo = 2;
+  optional int32 speedUpCount = 3;
+}
+
+message GodIslandGameMoveReqMsg {
+  int32 activityId = 1;
+  int32 targetId = 2;
+}
+
+message GodIslandGameAutoAttackReqMsg {
+  int32 activityId = 1;
+  int32 targetId = 2;
+  optional bool onlyNpc = 3;
+}
+
+// S_GOD_ISLAND_GAME_USE_FRUIT (206837)
+message GodIslandUseFruitReq {
+  int32 activityId = 1;
+  int32 useCount = 2;
+}
+
+message GodIslandUseFruitResp {
+  int32 ret = 1;
+  optional string costInfo = 2;
+  optional string ballCurPower = 3;
+  optional string ballMaxPower = 4;
+}
+
+// S_GOD_ISLAND_GAME_SPIRITUALBALL_INFO (206826, incoming 1aaa)
+message GodIslandGameSpiritualBallInfoReqMsg {
+  int32 activityId = 1;
+}
+
+message GodIslandGameSpiritualBallInfoRespMsg {
+  int32 ret = 1;
+  optional string curPower = 2;
+  optional string maxPower = 3;
+  optional string ballCurPower = 4;
+  optional string ballMaxPower = 5;
+}
+
+// S_GOD_ISLAND_GAME_USE_SPIRITUALBALL (206827, incoming 1aab)
+message GodIslandGameUseSpiritualBallReqMsg {
+  int32 activityId = 1;
+  optional int64 usePower = 2;
+}
+
+message GodIslandGameUseSpiritualBallRespMsg {
+  int32 ret = 1;
+  optional string curPower = 2;
+  optional string ballCurPower = 3;
+}
+
+// ---- Plant / liquid (vườn linh thảo) — schemas from GOD_ISLAND_PROTOCOL.md
+// sections 206836/206838/206839/206851 and GodIsland.decoded.proto:671,791.
+
+// Plant notice: one liquid sent or received. status 0 = pending (not yet
+// watered/collected), 1 = received.
+message GodIslandGamePlantNoticeInfo {
+  optional string name = 1;
+  optional int32 liquidId = 2;
+  optional int64 id = 3;
+  optional int32 status = 4;
+  optional int64 time = 5;
+}
+
+// S_GOD_ISLAND_GAME_PLANT_INFO (206836, incoming 1ab4): water-plant state,
+// pending liquid notices, and whether the fruit is ready.
+message GodIslandGamePlantInfoReqMsg {
+  int32 activityId = 1;
+}
+
+message GodIslandGamePlantInfoRespMsg {
+  int32 ret = 1;
+  optional int32 lv = 2;
+  optional int32 exp = 3;
+  repeated GodIslandGamePlantNoticeInfo noticeInfo = 4;
+  optional int32 canReceive = 5; // 1 = fruit ready to claim
+  optional int32 waterCount = 6; // liquid watered so far
+}
+
+// S_GOD_ISLAND_GAME_PLANT_WATER (206839, incoming 1ab7): collect one pending
+// notice by its noticeInfo.id (NOT the liquidId); id = 0 collects all pending
+// once the server's quick-receive condition (GODISLAND_QUICK_CLICK) is met.
+message GodIslandGamePlantWaterReqMsg {
+  int32 activityId = 1;
+  int64 id = 2;
+}
+
+message GodIslandGamePlantWaterRespMsg {
+  int32 ret = 1;
+  optional string reward = 2;
+  optional int32 exp = 3;
+  optional int32 canReceive = 4;
+  optional int32 lv = 5;
+  optional int32 waterCount = 6;
+}
+
+// S_GOD_ISLAND_GAME_PLANT_RECEIVE_FRUITS (206838, incoming 1ab6): claim the
+// completed plant reward while canReceive == 1.
+message GodIslandGamePlantReceiveFruitsReqMsg {
+  int32 activityId = 1;
+}
+
+message GodIslandGamePlantReceiveFruitsRespMsg {
+  int32 ret = 1;
+  optional string reward = 2;
+  optional int32 lv = 3;
+  optional int32 exp = 4;
+  optional int32 canReceive = 5;
+}
+
+// S_GOD_ISLAND_GAME_PLANT_SEND_LIQUID (206851, incoming 1ac3): donate one
+// liquid item; liquidId is a key of the GODISLAND_ITEM_ENERGY activity
+// config, sendNum is always 1 in the official client (button repeat sends
+// again). No recipient field — the server routes it by union/event logic.
+message GodIslandGameSendLiquidReqMsg {
+  int32 activityId = 1;
+  int32 liquidId = 2;
+  int32 sendNum = 3;
+}
+
+message GodIslandGameSendLiquidRespMsg {
+  int32 ret = 1;
+  optional GodIslandGamePlantNoticeInfo noticeInfo = 2;
+}
+
+// ---- Server event pushes (incoming types 1ac2/1ac9/1acd/1acf) ----
+
+// MYGAMEINFO_SYNC (206850, incoming 1ac2): the server's own state push for
+// this account — the push that confirms a revive/movement transition (see
+// ../remoteImmortalIsland/STATIC_ANALYSIS.md "Spiritual Ball recovery and
+// revival"), arriving before the 3s INFO_LOAD poll would notice.
+message GodIslandGameMyGameInfoSyncMsg {
+  int32 activityId = 1;
+  optional int32 location = 2;
+  optional string curPower = 3;
+  optional string maxPower = 4;
+  optional int64 attackCd = 5;
+}
+
+// LEFT_OUT_SYNC (206857, incoming 1ac9): a union left/was removed from the
+// island (own unionId = we were kicked out).
+message GodIslandLeftOutSyncInfo {
+  int32 activityId = 1;
+  int64 unionId = 2;
+}
+
+// BEEN_KILL_SYNC (206861, incoming 1acd): our unit died on the island;
+// reviveTime is the new revive deadline (epoch ms).
+message GodIslandBeenKillSyncMsg {
+  int32 activityId = 1;
+  optional int32 cityId = 2;
+  optional int64 targetId = 3;
+  optional string targetName = 4;
+  optional bool killByNPc = 5;
+  optional int64 reviveTime = 6;
+}
+
+// AUTO_BATTLE_STOP_SYNC (206863, incoming 1acf): auto battle stopped.
+message GodIslandAutoBattleStopSyncMsg {
+  int32 activityId = 1;
+}
+
+// S_ACTIVITY_GET_DATA (21003, incoming 03eb) request: fetches the activity
+// detail config; GODISLAND_ITEM_ENERGY (format
+// "liquidItemId|energyValue;..." per index.5d668.pretty.js:106937) lives in
+// its commonConfig.paramConfig. Field numbers below confirmed live against
+// activity 9061675 (raw-walked RspGetActivityDetail, see live_plant_test.go).
+message ReqGetActivityDetail {
+  int32 activityId = 1;
+  optional string version = 2;
+}
+
+message ActivityParamConfig {
+  optional int32 activityId = 1;
+  optional string param = 2; // config key, e.g. GODISLAND_ITEM_ENERGY
+  optional string value = 3;
+  optional int32 topic = 4;
+}
+
+// MallTempMsg (protobuf/Mall, verbatim field numbers).
+message ActivityMallTempMsg {
+  optional int32 id = 1;
+  optional string name = 2;
+  optional int32 shopType = 3;
+  optional string reward = 4;
+  optional int32 category = 5;
+  optional string price = 6;     // "costItemId=perUnit"; "0"/"X=0" = free
+  optional string oldPrice = 7;
+  optional int32 priceAdd = 8;
+  optional bool isDouble = 9;
+  optional int32 buyLimitType = 10;
+  optional int32 buyLimit = 11;
+  optional int32 sort = 12;
+  optional string param = 13;    // "3|1800|0|0" first token 3 = ad-watch row
+  optional int32 vipLimit = 14;
+  optional string rechargeId = 15;
+  optional string fundParam = 16;
+}
+
+message ActivityMallConfig {
+  optional int32 activityId = 1;
+  optional ActivityMallTempMsg mallTempMsg = 2;
+  optional int32 buyUnlockType = 3;
+  optional int32 buyUnlock = 4;
+  optional string fundParam = 5;
+  optional int32 topic = 6;
+  optional int32 discount = 7;
+}
+
+message ActivityMallBuyCountData {
+  optional int32 mallId = 1;
+  optional int64 count = 2;
+}
+
+// 21005 ACTIVITY_BUY_MALL_GOODS (ActivityBase shape — the client's own
+// builder sends {activityId, mallId, count, isUseADTime}, live-proven).
+message ReqBuyActivityGoods {
+  int32 activityId = 1;
+  int32 mallId = 2;
+  int64 count = 3;
+  bool isUseADTime = 4;
+  string extra = 5;
+}
+message ReqGetActivityConditionReward {
+  optional int32 activityId = 1;
+  optional int32 conditionId = 2;
+}
+message AcitivityConditionDataArr {
+  optional int32 activityId = 1;
+  optional int32 conditionId = 2;
+}
+message ReqGetActivityConditionRewardByArr {
+  repeated AcitivityConditionDataArr activityDataList = 1;
+}
+
+message RspGetActivityConditionReward {
+  optional int32 ret = 1;
+  optional string rewards = 2;
+}
+
+// 21006 GET_RANK_REWARD — pure receive of the activity's season/bracket
+// RANK settlement reward (client rank-reward view btnGetHandler sends
+// {activityId, rankType}). Shape + answer hex 03ee LIVE-CONFIRMED
+// 2026-11-08 (reborntrial_rank_live_test.go on 9063675): rankType 1 →
+// ret=0 rewards "100152=2|100162=4|350016=1|105044=3", rankType 2 →
+// ret=0 rewards "100025=15|100152=3|100004=60"; bogus types → ret=0 with
+// EMPTY rewards (server no-op — same ±0 lesson as 217233).
+message ReqGetRankReward {
+  int32 activityId = 1;
+  int32 rankType = 2;
+}
+message RspGetRankReward {
+  optional int32 ret = 1;
+  optional string rewards = 2; // "itemId=num|…" — empty = nothing to receive
+}
+
+message ReceiveCrossUnionRechargeRewardReq {
+  optional int32 activityId = 1;
+  optional int32 conditionId = 2;
+}
+message ReceiveCrossUnionRechargeRewardResp {
+  optional int32 ret = 1;
+  optional string rewards = 2;
+}
+
+message RspBuyActivityGoods {
+  int32 ret = 1;
+  optional string rewards = 2;
+  optional string extra = 3;
+}
+
+message ActivityConditionConfig {
+  // Milestone rows of the generic activity condition system (claim via
+  // 21004, or 21045 for the cross-server union-recharge flavour).
+  optional int32 activityId = 1;
+  optional int32 conditionId = 2;
+  optional string title = 3;
+  optional string desc = 4;
+  optional int32 type = 5;
+  optional string rewards = 6;
+  repeated string param = 8;
+}
+
+message ActivityCommonConfig {
+  // The 21003 answer re-carries this activity's main-config entry, so the
+  // hourly detail pull can also refresh the stored activity list rows.
+  optional ActivityMainConfig mainConfig = 1;
+  repeated ActivityConditionConfig conditionConfig = 2;
+  repeated ActivityMallConfig mallConfig = 3;
+  repeated ActivityParamConfig paramConfig = 4;
+  // Rank-settlement table rows (raw field-walk 2026-11-08, live 9063675):
+  // the 21006 rankType values are the entries' type field.
+  repeated ActivityRankConfig rankConfig = 5;
+}
+
+// One row of the 21003 rank-settlement table. The engine only reads type
+// (the 21006 sweep key — live 172: 1 = personal bracket "1|1|0|0"…
+// "501|2000|0|0", 2 = guild bracket "1|1|0|0"…"36|48|0|0"); the rest are
+// carried for honesty, unverified names.
+message ActivityRankConfig {
+  optional int32 id = 1;
+  optional int32 cfgId = 2;
+  optional string label3 = 3;
+  optional string label4 = 4;
+  optional int32 type = 5;
+  optional string rewards = 6;
+  optional string label7 = 7;
+  optional string param = 8; // "min|max|0|0" rank bracket
+}
+
+message ActivityDetailConfig {
+  optional ActivityCommonConfig commonConfig = 1;
+  // Event-specific config, marshalled per activity type (Ball GVG:
+  // BallGVGConfigSyncMsg place table — see ../remoteBallGVG).
+  optional bytes uniqueConfig = 2;
+}
+
+message ActivityConditionData {
+  optional int32 conditionId = 1;
+  optional string value = 2;
+  optional bool isGetReward = 3;
+}
+
+message ActivityCommonData {
+  optional int32 activityId = 1;
+  repeated ActivityConditionData conditionDataList = 2;
+  repeated ActivityMallBuyCountData mallBuyCountList = 3;
+  optional ActivityDetailConfig detailConfig = 4;
+  // Player's own activity data, marshalled per activity type (Ball GVG:
+  // BallGVGActivityDataTemp camp assignment — see ../remoteBallGVG).
+  optional bytes playerData = 5;
+}
+
+message RspGetActivityDetail {
+  int32 ret = 1;
+  optional ActivityCommonData activity = 2;
+}
+
+message GodIslandGameMiniMapInfoReqMsg {
+  int32 activityId = 1;
+  optional int32 floor = 2;
+  optional int32 group = 3;
+}
+
+// UnionBaseData is an external game type; we only read the owner union id
+// (field 1) and the owner union name (field 4). Presence of baseData marks
+// the city as owned.
+message GodIslandUnionOwnerInfo {
+  optional int64 unionId = 1;
+  optional string unionName = 4;
+}
+
+// ── People on the map (kunlun-style display, owner 2026-10-19) ─────────────
+// View-window pull ≡ kunlun 219903: request 206823 (000327e7) → answer
+// 1aa7. The ONE answer carries both the people standing in the asked cities
+// (cityInfo[].headInfo) and the units marching to/from them (routeInfo).
+// Field numbers verbatim from remoteBlessFrog/GodIsland.decoded.proto.
+message GodIslandGameCityInfoReqMsg {
+  int32 activityId = 1;
+  repeated int32 cityVec = 2;
+  int32 floorId = 3;
+  int32 groupId = 4;
+}
+message GodIslandGameCityInfoRespMsg {
+  int32 ret = 1;
+  repeated GodIslandGameCityInfo cityInfo = 2;
+  repeated GodIslandGameRouteInfo routeInfo = 3;
+  optional int32 floorId = 4;
+  optional int32 groupId = 5;
+}
+message GodIslandGameCityInfo {
+  int32 cityId = 1;
+  optional bool haveFight = 2;
+  optional GodIslandUnionSimpleInfo baseData = 3;
+  repeated GodIslandPlayerHeadData headInfo = 4;
+  optional int32 hp = 5;
+  optional int32 curHp = 6;
+  bool updateType = 7;
+  optional bool destroyed = 8;
+  optional string comment = 9;
+}
+message GodIslandUnionSimpleInfo {
+  optional int64 unionId = 1;
+  optional string unionName = 2;
+  optional int64 serverId = 3;
+}
+// External game type (PlayerHeadDataMsg). Fields pinned from the live 1aa7
+// capture of 2026-10-19 (36 head entries, activity 9062967): 1 = playerId
+// (serverId*1e5+n), 2 = owner server/union id, 3 = ~14xxxx code (meaning
+// TBD at port time), 4 = name (empty in the standing roster — march pushes
+// carry the real name), 5 = headIcon (RouterAppearanceMsg.headIcon family).
+message GodIslandPlayerHeadData {
+  optional int64 playerId = 1;
+  optional int64 refId = 2;
+  optional int32 code3 = 3;
+  optional string name = 4;
+  optional int32 headIcon = 5;
+}
+// March-feed push ≡ kunlun 219943: incoming 1aa6 (206822).
+message GodIslandGameRouteInfoSyncMsg {
+  repeated GodIslandGameRouteInfo routeInfo = 2;
+}
+// City-roster change push: incoming 1abe (206846). Full GodIslandGameCityInfo
+// rows for the cities whose standing roster changed — same shape as the 1aa7
+// answer rows, no activityId (attribution = sole open variant). Shapes from
+// GodIsland.decoded.proto.
+message GodIslandGameCityChangeSyncMsg {
+  repeated GodIslandGameCityInfo cityInfo = 1;
+}
+// City fight flag push: incoming 1ace (206862), observed 19x/4min resident.
+message GodIslandCityBattleState {
+  optional int32 cityId = 1;
+  optional bool isBattle = 2;
+}
+message GodIslandGameCityBattleSyncMsg {
+  repeated GodIslandCityBattleState cityStates = 1;
+}
+// Battle-line push (incoming 1ac0, 206848) — the islands' richest NAME
+// source: standing headInfo carries no name, these do (shapes pinned from
+// GodIsland.decoded.proto; GodIslandGameLinePlayerInfo.headInfo is the
+// external PlayerHeadDataMsg = same wire shape as GodIslandPlayerHeadData).
+message GodIslandGameLinePlayerInfo {
+  optional string name = 1;
+  optional string power = 2;
+  optional int64 union = 3;
+  optional GodIslandPlayerHeadData headInfo = 4;
+  optional int64 playerId = 5;
+}
+message GodIslandBattlePlayer {
+  optional int32 realmsType = 1;
+  optional GodIslandGameLinePlayerInfo playerInfo = 2;
+  optional int32 additionList = 3;
+}
+message GodIslandGameLineInfo {
+  optional int32 inCityId = 1;
+  optional int32 outCityId = 2;
+  optional int32 inLineType = 3;
+  optional int32 outLineType = 4;
+  optional int64 playerId = 5;
+  optional GodIslandGameLinePlayerInfo playerInfo = 6;
+}
+message GodIslandBattleMsg {
+  optional int32 cityId = 1;
+  optional GodIslandBattlePlayer attacker = 2;
+  optional GodIslandBattlePlayer beAttacker = 3;
+  optional int64 battleTime = 4;
+  optional bool attackSpeedUp = 5;
+}
+message GodIslandPlayerPowerChangeInfo {
+  optional int32 cityId = 1;
+  optional int64 playerId = 2;
+  optional string power = 3;
+}
+message GodIslandGameLineInfoSyncMsg {
+  repeated GodIslandGameLineInfo lineInfo = 1;
+  repeated GodIslandBattleMsg battleInfo = 2;
+  repeated GodIslandPlayerPowerChangeInfo powerChange = 3;
+}
+// Victory-banner push (incoming 1abf, 206847) — another named source.
+message GodIslandGamePlayerWinInfo {
+  optional string name = 1;
+  optional string unionName = 2;
+  optional int32 winCount = 3;
+  optional GodIslandPlayerHeadData headInfo = 4;
+}
+message GodIslandGamePlayerWinSyncMsg {
+  repeated GodIslandGamePlayerWinInfo info = 1;
+}
+
+message GodIslandGameMiniCityInfo {
+  optional int32 cityId = 1;
+  optional GodIslandUnionOwnerInfo baseData = 2;
+  optional bool haveFight = 3;
+}
+
+// resp of 206834 (incoming type 1ab2)
+message GodIslandGameMiniMapInfoRespMsg {
+  int32 ret = 1;
+  repeated GodIslandGameMiniCityInfo cityInfo = 2;
+  optional bool unlockGhostCity = 3;
+}
+
+//protoc --proto_path=. --go_out=. tytd.proto
+// ---------------------------------------------------------------------------
+// Yard (vườn nhà) production chain — see ../remoteAll/YARD_PRODUCTION_CHAIN.md.
+// Only the fields the bot reads or writes are declared; proto3 skips the rest
+// of the official schema on the wire.
+// ---------------------------------------------------------------------------
+
+message YardSearchInfo {
+  optional int32 areaId = 1;
+  repeated int32 startPos = 2;
+  repeated int32 endPos = 3;
+}
+
+// req of 215801 — the client sends an empty searchInfo list plus its own id.
+message YardEnterReq {
+  repeated YardSearchInfo searchInfo = 1;
+  optional int64 targetPlayerId = 2;
+}
+
+message YardCellMsg {
+  optional int64 uniqueId = 1; // instance identity used by make/gain — NOT buildId
+  optional int32 buildId = 2;
+  optional int32 row = 3;
+  optional int32 col = 4;
+  optional int32 turn = 5;
+  optional int32 status = 6;
+}
+
+// Runtime detail of one building instance. status: 0 idle, 1 making, 2
+// upgrading; a finished-but-uncollected run is still busy (client "Make_end").
+message YardBuildDetailMsg {
+  optional int32 level = 1;
+  optional int32 status = 2;
+  optional int32 productId = 3;
+  optional int64 startTime = 4;
+  optional int64 endTime = 5;
+  optional int32 collectNum = 6;
+  optional int64 levelUpEndTime = 7;
+  optional int64 totalNum = 8;
+  optional int32 speedTimes = 9;
+  optional bool isUnionHelp = 10;
+}
+
+message YardBuildingMsg {
+  optional YardCellMsg yardCellMsg = 1;
+  optional YardBuildDetailMsg yardBuildDetailMsg = 2;
+}
+
+message YardAreaInfoMsg {
+  optional int32 areaId = 1;
+  optional int32 areaStatus = 2;
+  repeated YardBuildingMsg buildingMsg = 3;
+}
+
+// resp of 215801 (incoming type 3db9) — yard snapshot, keyed per uniqueId.
+message YardEnterResp {
+  int32 ret = 1;
+  repeated YardAreaInfoMsg areaInfo = 2;
+  optional YardDrawDataMsg drawData = 8; // today's draw counters ride the snapshot
+}
+
+// req of 215825. isCancel=true cancels the run (rewards may return); the bot
+// only ever starts. productId/num follow the last recipe the server showed.
+message YardBuildMakeReq {
+  optional int64 uniqueId = 1;
+  optional int32 buildId = 2;
+  optional int32 productId = 3;
+  optional int32 num = 4;
+  optional bool isCancel = 5;
+}
+
+message YardBuildMakeResp {
+  int32 ret = 1;
+  optional string rewards = 2;
+}
+
+// req of 215827 — no productId/num: the server decides the collectable output.
+message YardBuildGainRewardReq {
+  int64 uniqueId = 1;
+  int32 buildId = 2;
+}
+
+message YardBuildGainRewardResp {
+  int32 ret = 1;
+  optional string rewards = 2;
+  optional string extraRewards = 3;
+  optional string inspireReward = 4;
+}
+
+// push 215848 — replaces one instance's detail wholesale (zeros are real
+// clears); the bot re-reads state via ENTER instead of tracking these.
+message YardBuildInfoMsgSync {
+  optional int64 uniqueId = 1;
+  optional int64 buildId = 2;
+  optional YardBuildDetailMsg yardBuildDetailMsg = 3;
+}
+
+// Yard draw (quay thưởng vườn nhà) — req 215822 / resp 3dce, push 3dea.
+// YardDrawDataMsg.freeDrawTimes and .adCount are TODAY'S USED counts
+// (ICT-day reset; the server pushes YardRefreshDataSync on rollover), capped
+// server-side by YARD_BUILD_DRAW_FREE_TIMES / YARD_BUILD_DRAW_AD_TIMES
+// (1 and 2 in GameConfig 4.9230). isUseADTime is only set when the client
+// pays the SuoShiXiang item to skip actually watching the ad — never here.
+// isTen is proto2-required, so it must be on the wire even when false.
+message YardDrawDataMsg {
+  optional int32 freeDrawTimes = 1; // free draws already used today
+  optional int32 drawCount = 2;     // pity progress
+  optional int32 ensureCount = 3;   // pity tier index
+  optional int32 adCount = 4;       // ad draws already used today
+}
+
+message YardDrawReq {
+  optional bool isTen = 1;    // multi (base-times) draw flag
+  optional bool isUseADTime = 2;
+  optional bool isADType = 3; // this draw consumes one ad slot
+  optional int32 poolId = 4;  // 0 = default pool (what the client sends)
+  optional int32 times = 5;   // omitted for a single draw
+}
+
+message YardDrawResult {
+  optional string rewards = 1;
+  optional string items = 2;
+  optional bool inNew = 3;
+  optional bool isTransPiece = 4;
+}
+
+message YardDrawResp {
+  int32 ret = 1;
+  repeated YardDrawResult drawResult = 2;
+  optional YardDrawDataMsg drawData = 3; // fresh counters after the draw
+  optional bool pieceShopOpen = 4;
+  optional bool isUseADTime = 5;
+}
+
+// push 215850 — daily draw/speed counters re-synced (day rollover).
+message YardRefreshDataSync {
+  optional YardDrawDataMsg drawData = 1;
+  optional int32 speedTimes = 2;
+}
+
+// ── Union Bounty (yêu minh huyền thưởng / bang treo thưởng) ──────────────
+// From UnionBounty.decoded.proto (../remoteAll), only the messages the escort
+// loop touches; battle-heavy types (plunder/attack/reports) are intentionally
+// absent. Wire format identical to the original optional-based definitions.
+
+message UnionBountyPlayerDataMsg {
+  optional int32 bountyTimes = 1;
+  optional int32 robTimes = 2;
+  optional int32 refreshTimes = 3;
+  optional int64 refreshTime = 4;
+  optional int64 lastWorshipTime = 5;
+  optional int32 helpTimes = 6;
+}
+
+message UnionBountyFinishReward {
+  optional string reward = 1;
+  optional int32 addScore = 2;
+  optional int32 escortCartConfigId = 3; // !=0 is the client's claimable signal
+}
+
+message UnionBountyBountyInfo {
+  optional int32 curConfigId = 1; // BountyBossDB id (monster) or BountyEventDB id (escort)
+  optional int32 unionBountyExp = 2;
+  optional UnionBountyFinishReward finishReward = 3;
+  optional int32 unionBountyDailyExp = 4;
+  optional string monsterPower = 5;
+  optional int32 pos = 6;
+}
+
+message UnionBountyPlayerInfo {
+  optional int64 playerId = 1;
+  optional int32 headIcon = 2;
+  optional string nickName = 3;
+  optional string fightValue = 4;
+  optional string unionName = 5;
+  optional int32 appearanceId = 6;
+  optional int64 serverId = 7;
+  optional string wxHeadUrl = 8;
+  optional int32 equipHeadIconFrame = 9;
+  optional int32 cloudId = 10;
+}
+
+message UnionBountyEscortCartMsg {
+  optional int32 configId = 1;
+  optional int32 robbedNum = 2;
+  optional int64 startTime = 3;
+  optional int32 energy = 4;
+  optional string maxBlood = 5;
+  optional string curBlood = 6;
+  optional int32 monsterId = 7;
+  optional int32 npcId = 8;
+  optional UnionBountyPlayerInfo playerData = 9;
+  optional string escortCartFightValue = 10;
+  optional bool attackedByMe = 11;
+}
+
+// resp 213614 — request body is empty.
+message UnionBountyOpenBountyEventResp {
+  optional int32 ret = 1;
+  optional UnionBountyBountyInfo bountyInfo = 2;
+  optional UnionBountyPlayerDataMsg playerData = 3;
+  optional bool isNewEvent = 4;
+}
+
+// req 213605 — type 1 = start/accept escort, 2 = abandon (never sent by us).
+message UnionBountyDealBountyReq {
+  int32 curConfigId = 1;
+  int32 type = 2;
+}
+
+message UnionBountyDealBountyResp {
+  optional int32 ret = 1;
+  optional UnionBountyPlayerDataMsg playerData = 2;
+  optional UnionBountyEscortCartMsg myCart = 3;
+  optional UnionBountyBountyInfo bountyInfo = 4;
+}
+
+// resp 213606 — request empty; same claim settles escort AND monster events.
+message UnionBountyGetRewardEscortResp {
+  optional int32 ret = 1;
+  optional int32 configId = 2;
+  repeated int32 adventureList = 3;
+  optional string reward = 5;
+}
+
+// resp 213617 — request empty.
+message UnionBountyHaveEscortResp {
+  optional int32 ret = 1;
+  optional bool exist = 2;
+}
+
+// Union Bounty monster room (solo chip-away). Trimmed view of
+// com.yq.msg.CityMsg.BattleMain — keeps only the fields the attack request
+// needs (pos + playerId); other fields arrive as unknown and are skipped.
+// Schemas from ../remoteAll/UnionBounty.decoded.proto / Battle.decoded.proto.
+message UnionBountyBattleMain {
+  optional int32 objId = 1;
+  optional int32 pos = 7;
+  optional int64 playerId = 9;
+}
+
+message UnionBountyMonsterTeamPlayerMsg {
+  optional int64 playerId = 1;
+  optional int32 pos = 2;
+}
+
+message UnionBountyOpenMonsterReq {
+  optional int64 playerId = 1;
+}
+
+message UnionBountyOpenMonsterResp {
+  optional int32 ret = 1;
+  optional int32 event = 2;
+  repeated UnionBountyBattleMain battleMainList = 3;
+  optional string monsterPower = 7;
+}
+
+message UnionBountyAttackMonsterReq {
+  repeated UnionBountyMonsterTeamPlayerMsg teamPlayerList = 1;
+  optional int32 bossId = 2;
+}
+
+// allBattleRecord (field 2) intentionally absent: the bot only needs the
+// outcome, not the replay.
+message UnionBountyAttackMonsterResp {
+  optional int32 ret = 1;
+  optional string reward = 3;
+}
+
+// Task system (nhiệm vụ) — ../remoteAll/TASK_PROTOCOL.md. Pushes 501 (full)
+// / 502 (per-task merge) keep the task map; S_TASK_GET_REWARD claims with a
+// batch of ids. proto2 marks the repeated int32 unpacked (08 per id, matching
+// the official client) — [packed = false] reproduces that wire form here.
+// multiReward (field 4) is not read and left as an unknown field.
+message TaskSelectItemMsg {
+  optional int32 index = 1;
+  optional int32 selectIndex = 2;
+  optional int32 selectType = 3;
+}
+
+message TaskDataTempMsg {
+  optional int32 taskId = 1;
+  optional string value = 2;
+  optional int32 state = 3;
+  repeated TaskSelectItemMsg selectItem = 5;
+}
+
+message TaskDataListMsg {
+  repeated TaskDataTempMsg dataList = 1;
+}
+
+message TaskGetRewardReqMsg {
+  repeated int32 taskId = 1 [packed = false];
+}
+
+message TaskGetRewardRespMsg {
+  optional int32 ret = 1;
+  optional string rewards = 2;
+}
+
+// S_WATCH_AD_TASK 20019 / 0x00004E33 (TASK_PROTOCOL.md): completes an
+// ad-watch condition. conditionId is the TASK id; activityId is deliberately
+// 0 for union task 120006. isUseADTime is only true for the paid skip-item
+// path, never for a normal watch. The response is ret only — completion is
+// confirmed by the 502 task push, not by this message.
+message WatchAdReq {
+  optional int32 activityId = 1;
+  optional int32 conditionId = 2;
+  optional bool isUseADTime = 3;
+}
+
+message WatchAdResp {
+  optional int32 ret = 1;
+}
+
+// S_DREAM_DATA_SYNC 20207 login push (arrives on transport 00cf, same push
+// whose field-2 pending-equipment list the DoChuaHuyResponse parse cancels).
+// dreamLv alone drives the per-request chop cap; fields 2..6 are left
+// unmodelled on purpose — unknown fields are skipped by proto.Unmarshal.
+message DreamDataMsg {
+  optional int32 dreamLv = 1;
+}
+
+// ---- Free ad spins ----
+// S_SPIRIT_DRAW 20822 resp (transport 0336) and S_MAGIC_DERIVATION 24408
+// resp (transport 1138). Both carry ret as field 1 like every other Resp in
+// this game; only ret is decoded — draw results land server-side regardless.
+// All other fields stay unmodelled and are skipped as unknown.
+message SpiritDrawResp {
+  optional int32 ret = 1;
+}
+message MagicDerivationResp {
+  optional int32 ret = 1;
+}
+
+// ---- Gather Energy (tụ linh trận) ----
+// Working set from ../remoteAll/GatherEnergy.decoded.proto — only the fields
+// the auto-loop decodes are modelled (state, pending reward ids, ad claim,
+// compact list, inside verify, join). Reward payloads, battle replays and
+// display data stay unmodelled and are skipped as unknown. Field tags match
+// the recovered schema exactly; schema-required fields are proto3 optional
+// and always set explicitly on the wire.
+message GatherEnergyMsg {
+  optional int32 state = 1;
+  optional int32 openNum = 2;
+  optional int32 attendNum = 3;
+  optional bool red = 4;
+  optional bool hadLike = 5;
+  repeated int64 enemyList = 6;
+  optional int32 getTimes = 7;
+}
+message SyncGatherEnergyMsg {
+  optional GatherEnergyMsg gatherEnergy = 1;
+}
+message GatherEnergyRewardMsg { optional int64 id = 1; }
+message GatherEnergyRewardShowResp { optional GatherEnergyRewardMsg reward = 1; }
+message GatherEnergyRewardReq { optional int64 id = 1; }
+message GatherEnergyRewardResp {
+  optional int32 ret = 1;
+  optional int64 id = 2;
+}
+message GatherEnergyEnterNewReq {}
+message GatherEnergyEnterNewResp {
+  optional int32 ret = 1;
+  repeated GatherEnergyRewardMsg reward = 2;
+  optional GatherEnergyMsg gatherEnergy = 5;
+  optional int32 totalNum = 6;
+  optional int32 totalAttendNum = 7;
+}
+message GatherEnergyGetADAwardReq { optional bool isUseADTime = 1; }
+message GatherEnergyGetADAwardResp {
+  optional int32 ret = 1;
+  optional int32 getTimes = 3;
+}
+message GatherEnergyFirstListViewReq {
+  optional int32 offset = 1;
+  optional int32 filterType = 2;
+}
+message GatherEnergyListBaseMsg {
+  optional int64 id = 1;
+  optional int64 endTime = 2;
+  optional int64 income = 3;
+}
+message GatherEnergyOpenerMsg {
+  optional int64 playerId = 1;
+  optional string nickName = 2;
+}
+message GatherEnergyFirstListMsg {
+  optional GatherEnergyListBaseMsg energyBaseMsg = 1;
+  optional GatherEnergyOpenerMsg openerMsg = 2;
+  optional int32 listSize = 3;
+  optional bool isAttend = 4;
+}
+message GatherEnergyFirstListViewResp {
+  optional int32 ret = 1;
+  repeated GatherEnergyFirstListMsg list = 4;
+}
+message GatherEnergyInsidePlayerMsg { optional int64 playerId = 1; }
+message GatherEnergyTeamMsgNew {
+  optional int32 index = 1;
+  optional int64 income = 2;
+  optional int64 protectTime = 3;
+  optional GatherEnergyInsidePlayerMsg playerInfo = 4;
+}
+message GatherEnergyDetailListMsg {
+  optional GatherEnergyListBaseMsg energyBaseMsg = 1;
+  repeated GatherEnergyTeamMsgNew teamList = 2;
+}
+message GatherEnergyInsideViewNewReq { optional int64 id = 1; }
+message GatherEnergyInsideViewNewResp {
+  optional int32 ret = 1;
+  optional GatherEnergyDetailListMsg detailInfo = 3;
+  optional int64 dislodgedTime = 4;
+}
+message GatherEnergyAttendNewReq { optional int64 id = 1; }
+message GatherEnergyAttendNewResp { optional int32 ret = 1; }
+
+// ---------------------------------------------------------------------------
+// Holy Land (thánh địa / 九幽争霸) event — schemas from
+// ../remoteHolyLand/HOLY_LAND_PROTOCOL.md + HolyLand.decoded.proto. Only the
+// fields we consume are declared; proto3 skips the rest as unknown.
+//
+// WIRE NOTE: HolyLand carries NO activityId anywhere. Officially-proto2
+// `required` request fields that can legitimately carry a zero/false value
+// (useItem=false free rebirth, auto-attack targetId=0 = off, isNpc=false) are
+// declared proto3 `optional` and are ALWAYS set explicitly by the caller —
+// proto3 optional keeps presence, so the field still serializes at its
+// default value, which a strict proto2 server parser demands.
+// ---------------------------------------------------------------------------
+
+// 209501 base info, 209520 heartbeat, 209521 game info, 209570 schedule,
+// 209511 worship, 209508/209509 rank reward — the client sends zero-byte
+// bodies; marshal one of these and the payload is empty.
+message HolyLandBaseInfoReqMsg {}
+message HolyLandHeartBeatReqMsg {}
+message HolyLandGameInfoReqMsg {}
+message HolyLandBattleApplyDataSyncReq {}
+message HolyLandWorshipReq {}
+message HolyLandPlayerUnionRankRewardReqMsg {}
+message HolyLandGetPlayerUnionRankRewardReqMsg {}
+
+message HolyLandBaseInfoRespMsg {
+  optional int32 ret = 1;
+  optional int32 selfRank = 2;
+  optional int32 group = 3;
+  optional int32 gameType = 4;
+  optional int64 unionId = 5;
+  optional bool canWorship = 11;
+}
+
+message HolyLandHeartBeatRespMsg {
+  optional int32 ret = 1;
+  optional int32 rank = 2;
+}
+
+// resp of 209521 (incoming 2531) — the state spine. location==0 means the
+// unit is dead unless leftOut; myRouteInfo != nil means marching;
+// rebirthData mirrors the BEEN_KILL push (rebirthTime = revive deadline).
+message HolyLandGameInfoRespMsg {
+  optional int32 ret = 1;
+  optional string fightValue = 3;
+  optional HolyLandBeenKillSyncMsg rebirthData = 4;
+  optional HolyLandGameRouteInfo myRouteInfo = 5;
+  optional int32 itemRebirthCount = 6;
+  optional bool leftOut = 7;
+  optional int32 location = 8;
+  optional int32 speedUpCount = 9;
+  optional bool haveCommand = 11;
+  optional int32 curPower = 12;
+  optional int64 attackCd = 13;
+  optional int32 unionPointRank = 14;
+  optional int32 freeRebirthCount = 15;
+  optional int32 autoAtkCityId = 17;
+  optional int32 realmsType = 18;
+}
+
+// One march route (ours when embedded in game info; anyone's in route syncs).
+message HolyLandGameRouteInfo {
+  optional int64 playerId = 1;
+  optional int32 fromCityId = 2;
+  optional int32 toCityId = 3;
+  optional int64 time = 4;
+  optional int64 arrival = 5;
+  optional int64 unionId = 6;
+  optional string name = 9;
+}
+
+message HolyLandGameMoveReqMsg {
+  int32 targetId = 1; // never 0 — plain proto3 field always serializes
+}
+
+message HolyLandGameMoveRespMsg {
+  optional int32 ret = 1;
+}
+
+// 209533 battle: isNpc required officially — always set explicitly (false =
+// attack the player-held city, true = hit the NPC guard).
+message HolyLandGameAtkReqMsg {
+  optional int32 targetId = 1;
+  optional int64 enemyId = 2;
+  optional bool isNpc = 3;
+}
+
+message HolyLandGameAtkRespMsg {
+  optional int32 ret = 1;
+}
+
+// 209537 auto-attack托管: targetId 0 = stop — always set explicitly so the
+// zero reaches the server.
+message HolyLandGameAutoAttackReqMsg {
+  optional int32 targetId = 1;
+}
+
+message HolyLandGameAutoAttackRespMsg {
+  optional int32 ret = 1;
+  optional int32 targetId = 2;
+}
+
+// 209531 accelerate: speedUpCount must equal our current counter (server
+// validates the baseline).
+message HolyLandGameAcclerateMoveReqMsg {
+  optional int32 speedUpCount = 1;
+}
+
+message HolyLandGameAcclerateMoveRespMsg {
+  optional int32 ret = 1;
+  optional string costInfo = 2;
+  optional int32 speedUpCount = 3;
+}
+
+// 209532 rebirth: useItem false = free (cooldown-gated), true = item (fast).
+message HolyLandGameBackHomeReq {
+  optional bool useItem = 1;
+}
+
+message HolyLandGameBackHomeRespMsg {
+  optional int32 ret = 1;
+  optional int32 freeRebirthCount = 2;
+  optional int32 itemRebirthCount = 3;
+}
+
+// 209526 minimap; gameType/group omitted lets the server pick our bracket.
+message HolyLandGameMiniMapInfoReqMsg {
+  optional int32 gameType = 1;
+  optional int32 group = 2;
+}
+
+// UnionBaseData subset: owner id/name (and flag/serverId for future use).
+// Presence of baseData marks the city as owned.
+message HolyLandMiniUnionInfo {
+  optional int64 unionId = 1;
+  optional int32 flag = 3;
+  optional string name = 4;
+  optional int64 serverId = 7;
+}
+
+message HolyLandGameMiniCityInfo {
+  optional int32 cityId = 1;
+  optional HolyLandMiniUnionInfo baseData = 2;
+  optional bool haveFight = 3;
+}
+
+message HolyLandGameMiniMapInfoRespMsg {
+  optional int32 ret = 1;
+  repeated HolyLandGameMiniCityInfo cityInfo = 2;
+}
+
+// 209522 MAP_CITY_INFO (incoming 2532): detail for the requested cityVec
+// plus the full marching-route snapshot — the one pullable source of "who
+// is moving where" (the 2557 push only updates it incrementally).
+message HolyLandGameCityInfoReqMsg {
+  repeated int32 cityVec = 1;
+  optional int32 gameType = 2;
+  optional int32 groupId = 3;
+}
+
+message HolyLandGameCityInfoRespMsg {
+  optional int32 ret = 1;
+  repeated HolyLandGameCityInfo cityInfo = 2;
+  repeated HolyLandGameRouteInfo routeInfo = 3;
+  optional int32 gameType = 4;
+  optional int32 groupId = 5;
+}
+
+// One queued/engaged player: the city-click popup's attacker/defender rows.
+message HolyLandGameLinePlayerInfo {
+  optional string name = 1;
+  optional int32 power = 2;
+  optional int64 union = 3;
+  optional int64 playerId = 5;
+  optional bool npc = 6;
+  optional string unionName = 7;
+  optional int32 realmsType = 9;
+}
+
+// An ongoing 1v1 at a city (defender vs one attacker).
+message HolyLandBattleMsg {
+  optional int32 cityId = 1;
+  optional HolyLandGameLinePlayerInfo attacker = 2;
+  optional HolyLandGameLinePlayerInfo beAttacker = 3;
+  optional int64 battleTime = 4;
+}
+
+// 209524 TARGET_CITY_LINE_INFO (incoming 2534): the queue at one city —
+// the data behind "click a city, see who is fighting".
+message HolyLandGameTargetCityLineInfoReqMsg {
+  optional int32 cityId = 1;
+  optional int32 type = 2;
+}
+
+message HolyLandGameTargetCityLineInfoRespMsg {
+  optional int32 ret = 1;
+  repeated HolyLandGameLinePlayerInfo attackInfo = 2;
+  repeated HolyLandGameLinePlayerInfo defendInfo = 3;
+  repeated HolyLandBattleMsg battleInfo = 4;
+}
+
+// 209570 schedule/qualification response + 209575 push — the authoritative
+// open flag (no activityId-based gating in this event).
+message HolyLandBattleApplyDataSyncMsg {
+  optional int32 ret = 1;
+  optional bool isApply = 2;
+  optional bool hasQuality = 3;
+  optional bool isOpen = 4;
+  optional int32 roundId = 5;
+  repeated int64 scheduleTimestamp = 6;
+  optional bool notFoundCrossId = 7;
+}
+
+message HolyLandBattleTimeStampsDataSyncMsg {
+  optional int32 ret = 1;
+  repeated int64 scheduleTimestamp = 2;
+}
+
+// 209511 worship (bái tế) — pure perk, no combat decision.
+message HolyLandWorshipRespMsg {
+  optional int32 ret = 1;
+  optional string reward = 2;
+}
+
+// 209508 rank-reward state / 209509 claim result.
+message HolyLandPlayerUnionRankRewardRespMsg {
+  optional int32 ret = 1;
+  optional int32 unionRank = 2;
+  optional int32 unionScore = 3;
+  optional bool hasReward = 4;
+  optional bool isEnterMap = 5;
+}
+
+message HolyLandGetPlayerUnionRankRewardRespMsg {
+  optional int32 ret = 1;
+  optional string reward = 2;
+}
+
+// ---- pushes ----
+
+// HolyLandUnionSimpleInfo: owner shape inside city-change pushes (distinct
+// from the minimap's UnionBaseData above).
+message HolyLandUnionSimpleInfo {
+  optional int64 unionId = 1;
+  optional string unionName = 2;
+  optional int64 serverId = 3;
+  optional int32 flag = 4;
+}
+
+message HolyLandGameCityInfo {
+  optional int32 cityId = 1;
+  optional bool haveFight = 2;
+  optional bool destroyed = 6;
+  optional HolyLandUnionSimpleInfo baseData = 7;
+}
+
+// 209550 CITY_CHANGE_SYNC (incoming 254e)
+message HolyLandGameCityChangeSyncMsg {
+  repeated HolyLandGameCityInfo cityInfo = 1;
+}
+
+// 209553 MYGAMEINFO_SYNC (incoming 2551)
+message HolyLandGameMyGameInfoSyncMsg {
+  optional int32 location = 1;
+  optional int32 curPower = 2;
+  optional int64 attackCd = 3;
+  optional string fightValue = 4;
+}
+
+// 209554 OCCUPYCITY_SYNC (incoming 2552)
+message HolyLandGameOccupyCitySyncMsg {
+  optional int32 ret = 1;
+  optional int32 cityId = 2;
+  optional string killName = 3;
+  optional int64 unionId = 4;
+}
+
+// 209555 LEFT_OUT_SYNC (incoming 2553): unionId eliminated from the field.
+message HolyLandLeftOutSyncInfo {
+  optional int64 unionId = 1;
+}
+
+// 209557 CITY_BATTLE_SYNC (incoming 2555)
+message HolyLandCityBattleState {
+  optional int32 cityId = 1;
+  optional bool isBattle = 2;
+}
+
+message HolyLandGameCityBattleSyncMsg {
+  repeated HolyLandCityBattleState cityStates = 1;
+}
+
+// 209558 BEEN_KILL_SYNC (incoming 2556): our unit died; rebirthTime is the
+// moment free rebirth becomes available (epoch, s-or-ms normalized).
+message HolyLandBeenKillSyncMsg {
+  optional bool killByNPC = 1;
+  optional string targetName = 2;
+  optional string unionName = 3;
+  optional int32 killNum = 4;
+  optional int64 rebirthTime = 5;
+  optional int32 cityId = 6;
+}
+
+// 209559 ROUTE_INFO_SYNC (incoming 2557)
+message HolyLandGameRouteInfoSyncMsg {
+  repeated HolyLandGameRouteInfo routeInfo = 1;
+}
+
+// 209560 AUTO_BATTLE_STOP_SYNC (incoming 2558):托管 ended server-side.
+message HolyLandGameAutoBattleStopSyncMsg {
+  optional int32 ret = 1;
+}
+
+// ── Union daily activity boxes (nhiệm vụ sôi nổi bang) ──────────────────
+// 22117 S_UNION_DAILYTASK (incoming 0845): panel snapshot — progress is the
+// union-activity vitality earned today, taskList the milestone indices
+// already claimed. Targets are client config UNION_DAILY_PARAM
+// "150|250|500|750|1000". Schema: ../remoteAll/Union.decoded.proto.
+message ReqUnionDailyTask {}
+
+message RspUnionDailyTask {
+  optional int32 ret = 1;
+  optional int32 progress = 2;
+  repeated int32 taskList = 3;
+}
+
+// 22118 S_UNION_GETDAILYTASK (incoming 0846): claim milestone actIndex (0-4).
+message ReqUnionGetDailyTask {
+  optional int32 actIndex = 1;
+}
+
+message RspUnionGetDailyTask {
+  optional int32 ret = 1;
+  optional string reward = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Ball GVG (Thượng Cổ Di Tích) event — schemas from
+// ../remoteBallGVG/BALL_GVG_PROTOCOL.md + BallGVG.decoded.proto. Only the
+// fields we consume are declared; proto3 skips the rest as unknown.
+//
+// WIRE NOTE: unlike Holy Land, EVERY Ball GVG message echoes the live
+// activityId, so responses attribute directly — no FIFO queue. activityId is
+// server-issued and never 0, so plain (non-optional) fields are safe here.
+// HP/fightValue/damage travel as decimal STRINGS (values may exceed int64
+// display precision downstream — keep them strings). The 21110 LEAVE_ACT
+// registry entry has no encoder: the stock client sends an EMPTY body there,
+// so we hand-write that frame rather than marshalling the (inactive) proto.
+// ---------------------------------------------------------------------------
+
+// Subset of the external PlayerCharacterImageMsg chain used only to recover
+// a player's name from the bytes we consume (playerBaseDataMsg.field 3).
+message BallGVGPlayerBase {
+  optional int64 playerId = 1;
+  optional string nickName = 3;
+  optional string fightValue = 5;
+}
+message BallGVGPlayerImage {
+  optional BallGVGPlayerBase playerBaseDataMsg = 1;
+}
+
+message BallGVGUserPropertyTemp {
+  optional string totalHp = 1;
+  optional string hp = 2;
+  optional string fightValue = 3;
+  optional int32 realmsId = 4;
+  optional int32 attackSpeed = 5; // ms between attacks
+}
+
+message BallGVGPositionTemp {
+  string x = 1;    // UI coordinate, decimal string with 5 fraction digits
+  string y = 2;
+  string dirX = 3;
+  string dirY = 4;
+  int64 time = 5;  // ms stamp of the report
+}
+
+message BallGVGUserDataTemp {
+  int32 activityId = 1;
+  optional BallGVGUserPropertyTemp property = 2;
+  optional int32 campId = 3;
+  optional int32 placeId = 4;
+  optional int64 transferTime = 5;
+  optional int64 attackTime = 6;  // last attack ms; + attackSpeed = next ok
+  optional int64 reviveTime = 7;  // absolute ms; dead while > now
+}
+
+// One occupant of a room: who they are, their camp/HP, where they stand.
+message BallGVGOtherUserTemp {
+  optional int32 campId = 1;
+  optional BallGVGPlayerImage playerData = 2;
+  optional BallGVGUserPropertyTemp property = 3;
+  optional int32 placeId = 4;
+  optional BallGVGPositionTemp position = 5;
+  optional int64 reviveTime = 6;
+}
+
+message BallGVGCampTemp {
+  int32 campId = 1;
+  optional int32 majorPlaceId = 4; // HQ the camp leader marked
+}
+
+message BallGVGPlaceDataTemp {
+  optional int32 placeId = 1;
+  repeated BallGVGOtherUserTemp user = 2;
+  optional int64 seizeTime = 3;
+  optional int32 campId = 4; // owner camp of the place
+}
+
+message BallGVGCampScoreTemp {
+  optional int32 campId = 1;
+  optional int64 score = 2;
+  optional int32 rank = 3;
+  optional int64 totalScore = 4;
+  optional int32 totalRank = 5;
+}
+
+message BallGVGCampScoreSyncTemp {
+  optional int32 campId = 1;
+  optional int64 score = 2;
+}
+
+// One room from the activity config (uniqueConfig of 21003's detailConfig).
+message BallGVGPlaceConfigTemp {
+  int32 activityId = 1;
+  optional int32 id = 2;
+  optional int32 type = 3; // 4 = capturable battlefield, <4 = fixed camps
+  optional string name = 4;
+  optional int32 level = 5;
+  optional int32 radius = 6;
+  optional int32 seizeScore = 7;
+  optional int32 seizeProduce = 8;
+}
+
+message BallGVGConfigSyncMsg {
+  repeated BallGVGPlaceConfigTemp placeConfig = 1;
+}
+
+// playerData bytes of our own activity record (21003): camp assignment.
+message BallGVGActivityDataTemp {
+  int32 activityId = 1;
+  optional int32 campId = 2;
+  optional int32 state = 3;
+  optional int32 endNum = 4;
+  optional int32 position = 5;
+}
+
+// 21103 — full snapshot; also the reconnect-recovery spine.
+message BallGVGEnterActivityReqMsg { int32 activityId = 1; }
+message BallGVGEnterActivityRespMsg {
+  optional int32 ret = 1;
+  optional BallGVGUserDataTemp userData = 2;
+  optional BallGVGCampTemp camp = 3;
+  optional BallGVGPlaceDataTemp placeData = 4; // current room roster
+  repeated BallGVGCampScoreSyncTemp score = 5;
+  optional int32 minLv = 7;
+  optional int32 maxLv = 8;
+}
+
+// 21104 enter / teleport between places (home = placeId of our camp).
+message BallGVGEnterPlaceReqMsg {
+  int32 activityId = 1;
+  int32 placeId = 2;
+}
+message BallGVGEnterPlaceRespMsg {
+  optional int32 ret = 1;
+  optional BallGVGPlaceDataTemp placeData = 2;
+  optional int32 placeId = 3;
+  optional int64 transferTime = 4;
+}
+
+// 21105 leave the current room (back to the activity lobby).
+message BallGVGLeavePlaceReqMsg { int32 activityId = 1; }
+message BallGVGLeavePlaceRespMsg { optional int32 ret = 1; }
+
+// 21106 position report — cosmetic state for other clients, no server-side
+// movement simulation.
+message BallGVGMoveReqMsg {
+  int32 activityId = 1;
+  BallGVGPositionTemp position = 2;
+}
+message BallGVGMoveRespMsg { optional int32 ret = 1; }
+
+// 21107 attack the named in-room player. Server computes the exchange.
+message BallGVGAttackReqMsg {
+  int32 activityId = 1;
+  int64 attackPlayerId = 2;
+}
+message BallGVGAttackRespMsg {
+  optional int32 ret = 1;
+  optional int64 attackTime = 2;
+  optional BallGVGAttackedTemp attack = 3;
+  optional int64 attackScore = 4;
+  optional BallGVGUserDataTemp userData = 5;
+  optional BallGVGBattleScoreResultTemp scoreResult = 6; // ours (death summary)
+}
+
+// 21109 mark a rally point for the camp (leader role is server-checked).
+message BallGVGMarkPlaceReqMsg {
+  int32 activityId = 1;
+  int32 placeId = 2;
+}
+message BallGVGMarkPlaceRespMsg { optional int32 ret = 1; }
+
+// 21111 whole-place summary (ownership + per-camp head counts).
+message BallGVGGetPlaceInfoReqMsg { int32 activityId = 1; }
+message BallGVGPlaceCampMemberTemp {
+  optional int32 campId = 1;
+  optional int32 num = 2;
+}
+message BallGVGPlaceSimpleTemp {
+  optional int32 placeId = 1;
+  optional int32 seizeCampId = 2; // current capturer (0 = none contested)
+  repeated BallGVGPlaceCampMemberTemp campMember = 3;
+}
+message BallGVGGetPlaceInfoRespMsg {
+  optional int32 ret = 1;
+  repeated BallGVGPlaceSimpleTemp place = 2;
+}
+
+// One resolved exchange between two players (ours in the attack response,
+// others' in the 21116 push).
+message BallGVGOneAttackedTemp {
+  optional string damage = 1;
+  optional bool isDodge = 3;
+  optional bool isCrit = 4;
+}
+message BallGVGAttackedTemp {
+  optional int64 attackPlayerId = 1;
+  optional int64 attackedPlayerId = 2;
+  optional string attackHp = 4;  // attacker HP after the exchange
+  optional string attackedHp = 5; // target HP after (0 = killed)
+  repeated BallGVGOneAttackedTemp atkTempList = 6;
+}
+
+message BallGVGBattleScoreTemp {
+  optional int32 kill = 1;
+  optional int64 killScore = 2;
+  optional int32 seize = 3;
+  optional int64 seizeScore = 4;
+}
+message BallGVGBattleScoreResultTemp {
+  optional BallGVGBattleScoreTemp battleScore = 1; // this fight
+  optional BallGVGBattleScoreTemp TotalBattleScore = 2; // round totals
+}
+
+// ---- server pushes ----------------------------------------------------
+
+// 21116: other occupants fighting each other (room battle chatter).
+message BallGVGAttackedSyncMsg {
+  repeated BallGVGAttackedTemp attack = 1;
+}
+
+// 21117: REPLACE the camp scoreboard with this list.
+message BallGVGCampScoreSyncMsg {
+  repeated BallGVGCampScoreSyncTemp campScore = 1;
+}
+
+// 21118: periodic position batch of room occupants.
+message BallGVGSimpleUserTemp {
+  optional int64 playerId = 1;
+  optional BallGVGPositionTemp position = 2;
+}
+message BallGVGPlaceSyncMsg {
+  repeated BallGVGSimpleUserTemp user = 1;
+}
+
+// 21120: REPLACE our camp metadata (rally mark etc.).
+message BallGVGCampSyncMsg {
+  optional BallGVGCampTemp camp = 1;
+}
+
+// 21121: WE were attacked — authoritative; userData must REPLACE ours.
+message BallGVGAttackedUserSyncMsg {
+  optional BallGVGOtherUserTemp attackUserData = 1; // the attacker
+  optional BallGVGAttackedTemp attack = 2;
+  optional int64 attackTime = 3;
+  optional BallGVGUserDataTemp userData = 4;
+  optional BallGVGBattleScoreResultTemp scoreResult = 5; // ours after the hit
+}
+
+// 21122: capture progress/flip on one place. campId = current owner.
+message BallGVGPlaceSeizeInfoTemp {
+  optional int32 campId = 1;
+  optional int32 seizeTime = 2;
+  optional int32 num = 3;
+}
+message BallGVGPlaceSeizeSyncMsg {
+  optional int32 placeId = 1;
+  repeated BallGVGPlaceSeizeInfoTemp seize = 2;
+  optional int64 beginTime = 3;
+  optional int32 seizeCampId = 4; // camp currently capturing
+  optional int64 seizeTime = 5;
+  optional int32 campId = 6;      // camp that OWNS the place
+}
+
+// 21123 / 21124: room roster deltas.
+message BallGVGEnterPlaceSync {
+  optional BallGVGOtherUserTemp user = 1;
+}
+message BallGVGLeavePlaceSync {
+  optional int64 playerId = 1;
+  optional int32 type = 2; // 1 = removed (death), 2 = died in place, else left
+}
+
+// 21127: round settlement (final scores + our rank). bestPerformance and
+// campBestPerformance (fields 3/4) carry PlayerCharacterImage payloads we
+// never render — left unknown on purpose.
+message BallGVGEndDataTemp {
+  optional BallGVGBattleScoreTemp battleScore = 1; // ours, this round
+  repeated BallGVGCampScoreTemp campScore = 2;
+  optional int64 score = 5;
+  optional int32 rank = 6;
+}
+message BallGVGEndDataSyncMsg {
+  optional BallGVGEndDataTemp endData = 1;
+}
+
+// ── Sky Trade (Tiên Vực Thương Đồ / 仙域商途) ──────────────────────────────
+// Activity system type 150; the live activityId comes from the activity list
+// and is echoed in every message (the type is never sent as an id). Two
+// flows: the trade-intelligence report (215000 → 215001 → 215024) and the
+// auto-trader loop (215001 snapshot → 215005 deals → 215004 move →
+// 215009 arrival). Field numbers per
+// ../remoteSkyTrade/SkyTrade.decoded.proto. The enter-map snapshot is
+// fully modelled — the web map renders ships and port markets from it.
+
+// The auto-trader (see player_skytrade.go) then plays the client's own
+// loop on top: 215005 deal (buy AND sell), 215004 move, 215009 claim
+// arrival — plus the ENTER_MAP snapshot's pending arrival event.
+
+// 215000 / 215001 / 215009 / 215024 requests all share {activityId}.
+message SkyTradeActivityReq {
+  optional int32 activityId = 1;
+}
+
+// 215000: only ret is read (0 = session open, current port server-derived).
+message SkyTradeEnterActivityResp {
+  optional int32 ret = 1;
+}
+
+// 215001: the full map snapshot — own ship, every alliance ship, and the
+// port markets (field tags per ../remoteSkyTrade/SkyTrade.decoded.proto).
+// event(6) is a pending unclaimed arrival; the auto-trader claims it via
+// 215009 before touching the market.
+message SkyTradeEnterResp {
+  optional int32 ret = 1;
+  optional SkyTradePlayerData playerData = 2;
+  repeated SkyTradeUnionPlayerData unionPlayerData = 3;
+  repeated SkyTradePortGoodsInfo portGoods = 4;
+  optional SkyTradeArrivalEvent event = 6;
+}
+
+// 215009 answer: the authoritative arrival (eventType != 0) + fame deltas.
+message SkyTradeGetRewardResp {
+  optional int32 ret = 1;
+  optional SkyTradeArrivalEvent event = 2;
+  optional int32 finalFame = 3;
+  optional int32 totalFame = 4;
+}
+
+// Arrival record shared by ENTER_MAP.event and GET_REWARD.event.
+message SkyTradeArrivalEvent {
+  optional int32 sourcePort = 1;
+  optional int32 targetPort = 2;
+  optional int32 eventType = 3;
+  optional string rewards = 4;
+  optional int32 addFame = 5;
+}
+
+message SkyTradePlayerData {
+  optional SkyTradeAirshipInfo airshipInfo = 1;
+  optional int64 availableFunds = 2;
+  repeated SkyTradeGoods goods = 3;
+}
+
+// funds(4) is the cargo-hold value cap (server-enforced on buy).
+message SkyTradeAirshipInfo {
+  optional int32 sourcePort = 1;
+  optional int32 targetPort = 2;
+  optional int64 startTime = 3;
+  optional int64 funds = 4;
+  optional int32 speeds = 5;
+  optional int32 level = 6;
+}
+
+message SkyTradeUnionPlayerData {
+  optional SkyTradePlayerBase player = 1;
+  optional SkyTradeAirshipInfo airshipInfo = 2;
+}
+
+// PlayerBaseDataMsg subset — name + union name are all the map labels.
+message SkyTradePlayerBase {
+  optional int64 playerId = 1;
+  optional string nickName = 3;
+  optional SkyTradeUnionBase unionData = 6;
+}
+
+message SkyTradeUnionBase {
+  optional int64 unionId = 1;
+  optional string name = 4;
+}
+
+message SkyTradePortGoodsInfo {
+  optional int32 portId = 1;
+  optional int32 rareGoodsId = 2;
+  repeated SkyTradeGoods goods = 3;
+}
+
+message SkyTradeGoods {
+  optional int32 goodsId = 1;
+  optional int64 num = 2;
+  optional int64 price = 3;
+}
+
+// Activity-detail uniqueConfig (21003): the event's static tables. Only the
+// fields the caravan reads are declared; unknown fields are skipped on the
+// wire. goodsConfig.price is the BASE price every market listing is compared
+// against; portConfig.specialGoodId is each port's own produce.
+message SkyTradeGoodsConfig {
+  optional int32 goodsId = 1;
+  optional string icon = 2;
+  optional int32 price = 3;
+  optional int32 num = 4;
+}
+
+message SkyTradePortConfig {
+  optional int32 portId = 1;
+  optional int32 specialGoodId = 2;
+}
+
+message SkyTradeConfigSync {
+  optional int32 activityId = 1;
+  repeated SkyTradeGoodsConfig goodsConfig = 2;
+  repeated SkyTradePortConfig portConfig = 4;
+}
+
+// 215024: ret plus, on success, which port's rare goods were published.
+message SkyTradeReportGoodsResp {
+  optional int32 ret = 1;
+  optional int32 rareGoodsId = 2;
+  optional int32 portId = 3;
+}
+
+// 215004: sail the idle ship to a wire port (10001..10015).
+message SkyTradeGotoPortReq {
+  optional int32 activityId = 1;
+  optional int32 port = 2;
+}
+
+message SkyTradeGotoPortResp {
+  optional int32 ret = 1;
+  optional SkyTradeAirshipInfo airshipInfo = 2;
+}
+
+// 215003: consume num acceleration items off the current voyage. On success
+// airshipInfo(2) carries the updated speeds counter (arrival shrinks by
+// speeds × RUNBUSINESS_ACCELATE_ITEM_EFFECT); when the last item docks the
+// ship, event(3) is the completed arrival and 215009 is not needed.
+message SkyTradeAddSpeedReq {
+  optional int32 activityId = 1;
+  optional int32 num = 2;
+}
+
+message SkyTradeAddSpeedResp {
+  optional int32 ret = 1;
+  optional SkyTradeAirshipInfo airshipInfo = 2;
+  optional SkyTradeArrivalEvent event = 3;
+}
+
+// 215005: the ONE deal endpoint — type packs the client's 64-bit quantity:
+// type = (qty>>32)<<2 + mode, mode 3 = buy, 0 = sell; num = low 32 bits.
+// On success goods(2) is the complete updated cargo hold, availableFunds the
+// new cash, goodsNum the new market stock for that good.
+message SkyTradeDealReq {
+  optional int32 activityId = 1;
+  optional int32 port = 2;
+  optional int32 goodsId = 3;
+  optional int32 num = 4;
+  optional int32 type = 5;
+}
+
+message SkyTradeDealResp {
+  optional int32 ret = 1;
+  repeated SkyTradeGoods goods = 2;
+  optional int64 availableFunds = 3;
+  optional int64 goodsNum = 4;
+  optional int32 level = 5;
+}
+
+// S_ELIXIR_GET_TIME_WATER (235536): nhận suất nước miễn phí của linh điền.
+// Body chuẩn client bắt được: {var1=0, var2=số suất} — sáng gửi 08 00 10 01,
+// chiều gửi 08 00 10 02; hai suất/ngày
+// (11:00–14:00 và 17:00–21:00 giờ VN) chỉ khác nhau ở thời điểm gửi.
+message ElixirGetTimeWaterReq {
+  optional int32 var1 = 1;
+  optional int32 var2 = 2;
+}
+
+// ---- Big Chess (Tiên Dịch Bài Cục / 仙弈破阵, activity type 341) ----
+// Schema from ../remoteBigChess/BigChess.decoded.proto + BIG_CHESS_PROTOCOL.md.
+// Request IDs 234101..234106 (ranked) and 234121..234123 (practice); the
+// shared network layer sends full IDs, answers arrive with id % 100000 →
+// transport 34101..34106 (hex 8535..853A) / 34121..34123 (8549..854B).
+// The bot carries this game for the AI-play MCP tools only — ranked mode;
+// the server is authoritative for legality, so only consumed fields are
+// declared and everything else rides past as unknown.
+message ChessData {
+  optional int32 chessNo = 1; // unique piece instance — the board key
+  optional int32 chessId = 2; // piece type: 1001 pawn 1002 advisor 1003 elephant 1004 cannon 1005 knight 1006 rook 1007 general 1008 REDJU (the player)
+  optional int32 x = 3;       // zero-based column
+  optional int32 y = 4;       // zero-based row
+}
+
+message ChineseChessPlayerDataSync {
+  optional int32 freeCount = 1;  // remaining free ranked starts today
+  optional int32 maxScore = 2;   // best historical score
+  optional int32 gameStatus = 3; // server run status 0..3
+}
+
+// uniqueConfig of the 21003 activity detail (repeated per enemy type).
+message ChessConfig {
+  optional int32 id = 1;
+  optional int32 score = 2;
+  optional string canGo = 3;     // carried verbatim; client never consults it
+  optional string moveLimit = 4; // ditto
+}
+
+message ChineseChessActivityConfig {
+  repeated ChessConfig chessConfigList = 1;
+}
+
+message ChineseChessEnterReq {
+  int32 activityId = 1;
+}
+message ChineseChessEnterResp { // 234101 → incoming 8535
+  int32 ret = 1;
+  optional ChineseChessPlayerDataSync playerData = 2;
+}
+
+message ChineseChessEnterGameReq {
+  int32 activityId = 1;
+}
+message ChineseChessEnterGameResp { // 234102 → incoming 8536; start OR resume
+  int32 ret = 1;
+  repeated ChessData chessDataList = 2; // full enemy board
+  optional ChessData selfChessData = 3;
+  optional int32 itemReviveCount = 4;    // CONSUMED counts, not remaining
+  optional int32 ingotReviveCount = 5;
+  optional int32 passReviveCount = 6;
+  optional bool guideOpen = 7;
+  optional int32 nextRound = 8;          // spawn-wave countdown of nextChess
+  repeated ChessData nextChess = 9;      // the whole next wave
+  optional int32 gameStatus = 10;        // 0 running 1 revive 2 over 3 pass
+  optional int64 score = 11;             // authoritative, keep int64
+  optional int32 powerTimes = 12;        // active cross charges
+  optional int32 round = 13;             // current step counter
+  optional int32 powerOnCount = 14;
+  optional int32 powerCrossCount = 15;
+  optional int32 powerRemoveTypeCount = 16;
+  optional int32 powerRemoveRandomCount = 17;
+  optional int32 freeCount = 18;
+}
+
+message ChineseChessMoveReq { // all three power bools are REQUIRED on the wire
+  int32 activityId = 1;
+  int32 x = 2;
+  int32 y = 3;
+  bool powerOn = 4;          // pipe: glide through blockers, clear crossed segment
+  bool powerCross = 5;       // consume a cross charge, clear dest row+column
+  bool powerRemoveType = 6;  // same-type removal onto the target's chessId
+}
+message ChineseChessMoveResp { // 234103 → incoming 8537
+  int32 ret = 1;
+  repeated ChessData chess = 2;    // survivor board set — REPLACE by chessNo
+  optional ChessData selfChess = 3;
+  optional ChessData moveChess = 4; // enemy the server moved this turn
+  optional int32 nextTurn = 5;
+  repeated ChessData nextChess = 6; // replaces the spawn preview
+  optional int32 gameStatus = 7;
+  optional int32 isRevive = 8;      // >0: automatic pass/shield revive happened
+  optional int64 score = 9;
+  optional int32 step = 10;
+  optional int32 powerOnCount = 11;
+  optional int32 powerCrossCount = 12;
+  optional bool newPlayer = 13;     // beginner-protection recovery fired
+  optional int32 passReviveCount = 14;
+  optional int32 powerRemoveTypeCount = 15;
+}
+
+message ChineseChessEndReq {
+  int32 activityId = 1;
+}
+message ChineseChessEndResp { // 234104 → incoming 8538
+  int32 ret = 1;
+  optional int64 score = 2;
+  optional int32 lastRank = 3;
+  optional int32 nowRank = 4;
+}
+
+message ChineseChessUseItemReq {
+  int32 activityId = 1;
+  int32 type = 2; // 0 = revive (server picks the cost from run state), 1 = unlock danger guide
+}
+message ChineseChessUseItemResp { // 234105 → incoming 8539
+  int32 ret = 1;
+  repeated ChessData chess = 2; // survivor board after revive — REPLACE
+  optional int32 itemReviveCount = 3;
+  optional int32 ingotReviveCount = 4;
+  optional bool guideOpen = 5;
+}
+
+message ChineseChessUseRemoveItemReq {
+  int32 activityId = 1;
+}
+message ChineseChessUseRemoveItemResp { // 234106 → incoming 853A
+  int32 ret = 1;
+  repeated ChessData chess = 2; // the REMOVED pieces — not a board replace
+  optional int32 powerRemoveRandomCount = 16;
+}
+
+// ---- Big Chess practice trio (234121-234123 → 8549-854B) -----------------
+// Practice mirrors ranked field-for-field EXCEPT: enter-game resp reuses the
+// ranked shape exactly; move resp has no power counters and its newPlayer
+// sits at 11 (ranked uses 11 for powerOnCount); end resp carries the
+// survivor board and scores at 3/4/5 (ranked: score at 2).
+
+message ChineseChessPracticeMoveResp { // 234122 → incoming 854A
+  int32 ret = 1;
+  repeated ChessData chess = 2;     // survivor board — REPLACE
+  optional ChessData selfChess = 3;
+  optional ChessData moveChess = 4; // enemy the server moved this turn
+  optional int32 nextTurn = 5;
+  repeated ChessData nextChess = 6;
+  optional int32 gameStatus = 7;
+  optional int32 isRevive = 8;
+  optional int64 score = 9;
+  optional int32 step = 10;
+  optional bool newPlayer = 11;
+}
+
+message ChineseChessPracticeEndResp { // 234123 → incoming 854B
+  int32 ret = 1;
+  repeated ChessData chess = 2; // survivor board at settle
+  optional int64 score = 3;
+  optional int32 lastRank = 4;
+  optional int32 nowRank = 5;
+}
+
+// ---- Treasure Auction (Tàng Bảo Các, 234xxx) ------------------------------
+
+message TreasureAuctionHelpReq { // 234007 (00 03 92 17) → incoming 84D7
+  // Single-field body the client sends to help a treasure dig; the bot
+  // always sends 1. Refusals (e.g. nothing to help) come back on 84D7 and
+  // are not read.
+  int32 type = 1;
+}
+
+// ---- Pupil (Đồ Đệ, 2118xx) -------------------------------------------------
+
+message PupilTrainReq { // 211802 (00 03 3B 5A) → incoming 2E1A
+  // index = seat (site) index of the pupil, the same key the server uses in
+  // CurrentTrainTimeInfoMsg {index, trainTimes, remainTrainTimes, ...};
+  // per-seat attempts recover on PUPIL_ENERGY_RECOVER_TIME. index=0 means
+  // train ALL seats — `optional` so the 0 is actually emitted (08 00)
+  // instead of being dropped by proto3's implicit-zero rule.
+  optional int32 index = 1;
+}
+
+// ---- Chaos Law (Pháp Tắc Thái Hư, 2367xx) ---------------------------------
+// Requests: ENTER/PERCEIVE/ONE_KEY_HELP carry an empty body; EVOLVE and
+// EVOLVE_REWARD carry only {id} (law id from the player's unformed list).
+// All shapes verified live 2026-10-02 (wire dump in player_chaoslaw_live_test.go).
+
+message ChaosLawIdReq { // 236703 + 236704 request
+  optional int32 id = 1; // unformed-law id from ChaosLawPlayerData.laws
+}
+
+message ChaosLawUnformed { // playerData.f6 — one evolve slot
+  optional int32 id = 1;
+  optional int32 num = 2;
+  optional int32 v3 = 3;
+  optional int64 v4 = 4;
+  optional int32 evolving = 5; // 1 = timer armed/running
+  optional int64 v6 = 6;
+  optional int64 endTime = 7;  // ms; <=now && evolving → finished, claimable
+  optional int32 v8 = 8;
+}
+
+message ChaosLawSeparationEquip {
+  optional int32 slot = 1;
+  repeated int32 lawIds = 2;
+}
+
+message ChaosLawPlayerData {
+  optional int32 v1 = 1;
+  optional int64 perceiveNextAccumulateTime = 2; // ms of next +1 energy
+  optional int32 helpCount = 3;
+  optional int32 v4 = 4;
+  optional int32 perceiveCount = 5; // client perceives while >= 5
+  repeated ChaosLawUnformed laws = 6;
+  optional int32 wareHouseLimit = 7;
+  repeated int32 equippedLawIds = 8;
+  optional int32 sellCount = 9;
+  repeated ChaosLawSeparationEquip separationEquips = 10;
+  optional int32 v11 = 11;
+}
+
+message ChaosLawEnterResp { // 236701 → 8F5D
+  optional int32 ret = 1;
+  optional ChaosLawPlayerData playerData = 2;
+  // 3: item list, 4: redPoint — ignored
+}
+
+message ChaosLawPerceiveResp { // 236702 → 8F5E
+  // f1 is a monotonic server counter (live: 0, 36702), NOT a ret code.
+  optional int32 v1 = 1;
+  optional int32 v4 = 4;
+  optional int32 v5 = 5;
+  optional ChaosLawPlayerData playerData = 6;
+  // 7: newItems — ignored
+}
+
+message ChaosLawEvolveResp { // 236703 → 8F5F
+  optional int32 v1 = 1; // answer scalar (server accepted); no ret field seen
+}
+
+message ChaosLawEvolveRewardResp { // 236704 → 8F60
+  optional int32 ret = 1;
+  // 2: claimed item, 3: playerData (fresher copy), 4: rewards string — 2/4
+  // ignored; 3 is parsed.
+  optional ChaosLawPlayerData playerData = 3;
+}
+
+message ChaosLawOneKeyHelpResp { // 236712 → 8F68
+  optional int32 helpCount = 1; // no ret field seen; any answer = accepted
+}
+
+// ---- Yue Bao (Tiên Ngọc Bảo Phủ, activity type 170, 2170xx) ---------------
+// Live-verified 2026-10-02: ENTER/INTERACTE body {activityId}; DEPOSIT body
+// {activityId, slot, amount}. ENTER answers with the whole history: records
+// {ts ms, kind, amount, flag} where kind 1 = an OPEN deposit, 2/3 =
+// collected/withdrawn. Slot 1 = 1 day, slot 3 = 3 days (pending sync 426c
+// head {maturity, slot, amount} proved it). INTERACTE collects everything
+// due (no slot param); a per-slot INTERACTE body is refused (17003).
+
+message YueBaoActivityReq { // ENTER 217001 + INTERACTE 217003 request
+  optional int32 activityId = 1;
+}
+
+message YueBaoDepositReq { // DEPOSIT 217002 request
+  optional int32 activityId = 1;
+  optional int32 slot = 2;
+  optional int32 amount = 3;
+}
+
+message YueBaoRecord {
+  optional int64 ts = 1;    // ms
+  optional int32 kind = 2;  // 1 = open deposit, 2/3 = collected/withdrawn
+  optional int32 amount = 3;
+  optional int32 flag = 4;
+}
+
+message YueBaoEnterData { // the f2 wrapper inside ENTER resp
+  repeated YueBaoRecord records = 4;
+}
+
+message YueBaoEnterResp { // 217001 → 4269
+  optional int32 ret = 1;
+  optional YueBaoEnterData data = 2;
+}
+
+message YueBaoDepositResp { // 217002 → 426a
+  optional int32 ret = 1;
+}
+
+message YueBaoInteracteResp { // 217003 → 426b; f2 reward string ignored
+  optional int32 ret = 1;
+}
+
+// ---- Talent / Huyết Mạch (2062x) -------------------------------------------
+// Requests are full 20xxx ids; answers arrive at id-20000 (like SPIRIT_DRAW
+// 20822 → 0336). Field numbers live-verified 2026-10-02
+// (player_huyetmach_live_test.go): roll refusal 1201 = missing item 100007
+// (TALENT_PULL_COST); the DEAL body {3:{index,action=1=delete},4:0} is the
+// real client's captured frame and answered ret=0.
+
+message TalentRandomReq { // 20622 request
+  optional int32 randomTimes = 1; // 1..5, cap by talentCreateLevel (AUTOTALENT_COST_RATE)
+}
+
+message TalentRandomResp { // 20622 → 026e; unDealTalentData (f2) ignored — re-read via GET_UNDEAL
+  optional int32 ret = 1;
+}
+
+message TalentDealItem {
+  optional int32 index = 1;  // position in the un-dealt queue
+  optional int32 action = 2; // 1 = DELETE (live-captured)
+}
+
+message TalentDealReq { // 20623 request
+  optional TalentDealItem item = 3;
+  optional int32 mode = 4; // client capture: 0
+}
+
+message TalentDealResp { // 20623 → 026f; f2 reward + f3 player data ignored
+  optional int32 ret = 1;
+}
+
+message TalentUndealData {
+  // f2 repeated = one entry per pending result; contents (talentId, quality,
+  // attrs) unused while the policy is delete-all.
+  repeated bytes items = 2;
+}
+
+message TalentUndealResp { // 20625 → 0271
+  optional int32 ret = 1;
+  optional TalentUndealData data = 2;
+}
+
+message TalentPlayerDataMsg { // 026d login sync {1:talentData×12, 2=47, 3=651, 5=4870}
+  // f2 is read as talentCreateLevel: it alone fits the AUTOTALENT_COST_RATE
+  // 1..60 gate range (47 → roll x3). f3/f5 are book counters, far outside
+  // any level range. If a future build moves the field, a wrong multiplier
+  // just yields roll refusals (ret≠0, nothing spent) — self-limiting.
+  optional int32 talentCreateLevel = 2;
+}
+
+// ---- ComposeBall / "đại hội luyện khí" (activity type 130) -----------------
+// Recovered from the CDN text asset protobuf/ComposeBall (package
+// com.yq.msg.CityMsg; cc.TextAsset payload de-obfuscated by stripping the
+// "12345" prefix and XOR-ing every char with 1). Client required fields are
+// relaxed to optional per this file's proto3 convention — wire-compatible.
+// Requests 213001..213005 → transport 32c9..32cd (%100000).
+
+message ComposeBallConfig {
+  optional int32 id = 1;        // config id the balls carry (configId)
+  optional int32 level = 2;     // merge level 1..FRUIT_MAX_LEVEL+1
+  optional string icon = 3;
+  optional int32 width = 4;     // ball diameter (client px)
+  optional int32 score = 5;     // points awarded when this level is formed
+  optional int32 currency = 6;
+  optional string destroyed = 7; // per-itemType level gates ("|" list)
+}
+
+message ComposeBallItemUseData {
+  optional int32 itemId = 1;
+  optional int32 num = 2;
+}
+
+message ComposeBallConfigSync { // activity-detail uniqueConfig
+  repeated ComposeBallConfig configs = 1;
+}
+
+message ComposeBallUserDataSync {
+  optional int32 hp = 1;          // remaining drops (stamina)
+  optional int64 hpTime = 2;      // last regen anchor
+  optional int32 costHp = 3;      // hp cost per drop
+  repeated ComposeBallItemUseData itemUseData = 4;
+  optional int32 score = 5;
+  optional int32 maxScore = 6;
+}
+
+message ComposeBallBallData {
+  optional int32 id = 1;
+  optional int32 configId = 2;
+  repeated string position = 3;        // [x,y] fixed(5) strings
+  repeated string linearVelocity = 4;  // [x,y] fixed(5) strings
+  optional string scale = 5;           // fixed(5)
+}
+
+message ComposeBallEnterGameReq { // 213001
+  optional int32 activityId = 1;
+}
+
+message ComposeBallEnterGameResp { // → 32c9
+  optional int32 ret = 1;
+  optional ComposeBallSyncData syncData = 2;
+}
+
+message ComposeBallComposeData {
+  optional int32 ballA = 1;
+  optional int32 ballB = 2;
+  optional ComposeBallBallData ball = 3;        // the merged result ball
+  repeated ComposeBallBallData processBall = 4; // client physics trail
+}
+
+message ComposeBallComposeCount {
+  optional int32 configId = 1;
+  optional int32 count = 2;
+}
+
+message ComposeBallSyncData {
+  optional bool gameOver = 1;
+  optional int32 id = 2;             // next drop's ball id (client counter)
+  optional int32 configId = 3;       // next fruit config
+  repeated ComposeBallBallData balls = 4;
+  repeated ComposeBallComposeCount count = 5;
+  optional ComposeBallUserDataSync syncData = 6;
+}
+
+message ComposeBallAchieveData {
+  optional int32 conditionId = 1;
+  optional int32 exceedRate = 2;
+}
+
+message ComposeBallComposeReq { // 213002 — full board upload every settle (merges optional: a plain drop sends balls only)
+  optional int32 activityId = 1;
+  repeated ComposeBallBallData balls = 2;
+  repeated ComposeBallComposeData composeData = 3;
+  optional string ballsCheck = 4; // md5(SALT + concat(all ball position strings))
+}
+
+message ComposeBallComposeResp { // → 32ca
+  optional int32 ret = 1;
+  optional ComposeBallSyncData syncData = 2;
+  repeated ComposeBallAchieveData achieveData = 3;
+}
+
+message ComposeBallUseItemReq { // 213003 — itemType 1 clear, 2 swap (idA,idB), 3 level-up, 4 merge-all
+  optional int32 activityId = 1;
+  optional int32 itemType = 2;
+  optional int32 idA = 3;
+  optional int32 idB = 4;
+  repeated ComposeBallBallData balls = 5;
+  repeated ComposeBallComposeData composeData = 6;
+  optional string ballsCheck = 7;
+}
+
+message ComposeBallUseItemResp { // → 32cb
+  optional int32 ret = 1;
+  optional ComposeBallSyncData syncData = 2;
+  repeated ComposeBallAchieveData achieveData = 3;
+}
+
+message ComposeBallHpItemReq { // 213004 — buy stamina with items
+  optional int32 activityId = 1;
+  optional int32 num = 2;
+}
+
+message ComposeBallHpItemResp { // → 32cc
+  optional int32 ret = 1;
+  optional ComposeBallUserDataSync sync = 2;
+}
+
+message ComposeBallSettleReq { // 213005 — end round, report score
+  optional int32 activityId = 1;
+}
+
+message ComposeBallSettleResp { // → 32cd
+  optional int32 ret = 1;
+  optional int32 score = 2;
+  optional int32 rank = 3;
+  optional int32 nextRankScoreGap = 4;
+  optional ComposeBallUserDataSync sync = 5;
+}
+
+// ---- KunlunWar / "崑崙崢覇" (union city-war, activity type 199) ----------
+// Recovered 2026-10-05 from the CDN text asset protobuf/KunlunWar (package
+// com.yq.msg.CityMsg; cc.TextAsset de-obfuscated: strip "12345" prefix, XOR
+// every char with 1). Requests 219901..219959 → transport 4da5..4dbb
+// (%100000 rule); the push syncs (219931..219956) answer with the SAME
+// transport ids. Required fields are relaxed to optional per this file's
+// proto3 convention — wire-compatible. Fields the bot never reads are
+// omitted; proto3 retains them as unknown. Map: 61×61 iso grid, block key
+// posIndex = y*61+x; cities by cityId; marches keyed by playerId.
+// KunlunUnionBaseData mirrors the shared UnionBaseData (same field numbers:
+// 1 unionId, 3 flag, 4 name, 7 serverId — HolyLandMiniUnionInfo precedent).
+
+message KunlunUnionBaseData {
+  optional int64 unionId = 1;
+  optional int32 flag = 3;
+  optional string name = 4;
+  optional int64 serverId = 7;
+}
+
+message KunlunPeakHoldTimeConfig { // ActivityPeakHoldTimeConfig subset
+  optional int32 activityId = 1;
+  optional int32 timeId = 2;
+  optional int32 type = 3;        // 1 SignUp, 2 Prepare, 3 Battle
+  optional int32 beginTime = 4;   // hours from activity beginTime
+  optional int32 durationTime = 5;
+  optional string param = 6;      // SignUp: promotion cut-off rank
+}
+
+message KunlunWarGroupConfig {
+  optional int32 activityId = 1;
+  optional int32 rankId = 2;
+  optional int32 size = 3;
+  optional int32 up = 4;
+  optional int32 down = 5;
+  optional string score = 6;
+}
+
+message KunlunWarPlaceConfig {
+  optional int32 activityId = 1;
+  optional int32 type = 2;
+  optional string long = 3;
+  optional int32 score = 4;
+  optional int32 reward = 5;
+  optional int32 hp = 6;
+}
+
+message KunlunWarEventConfig {
+  optional int32 activityId = 1;
+  optional int32 id = 2;
+  optional int32 type = 3;
+  optional int32 weight = 4;
+  optional string rewards = 5;
+  optional int32 score = 6;
+  optional int32 exp = 7;
+  optional string param = 8;
+  optional int32 monsterId = 9;
+  optional int32 quality = 10;
+}
+
+message KunlunWarAttrConfig {
+  optional int32 activityId = 1;
+  optional int32 id = 2;
+  optional int32 exp = 3;
+  optional int32 attack = 4;
+  optional int32 defense = 5;
+  optional int32 hp = 6;
+  optional int32 speed = 7;
+  optional int32 increaseDamage = 8;
+  optional int32 decreaseDamage = 9;
+  optional int32 type = 10;
+}
+
+message KunlunWarTreasureConfig {
+  optional int32 activityId = 1;
+  optional int32 id = 2;
+  optional int32 type = 3;
+  optional int32 param = 4;
+  optional int32 weight = 5;
+  optional int32 quality = 6;
+}
+
+message KunlunWarCityConfig {
+  optional int32 activityId = 1;
+  optional int32 id = 2;
+  optional string data = 3; // "cityId-posIndex,posIndex,…" block membership
+}
+
+message KunlunWarConfigSync { // activity-detail (21003) uniqueConfig
+  repeated KunlunPeakHoldTimeConfig peakHoldTimeConfigs = 1;
+  repeated KunlunWarGroupConfig groupConfig = 2;
+  repeated KunlunWarPlaceConfig placeConfig = 3;
+  repeated KunlunWarEventConfig eventConfig = 4;
+  repeated KunlunWarAttrConfig attrConfig = 5;
+  repeated KunlunWarTreasureConfig treasureConfig = 6;
+  repeated KunlunWarCityConfig cityConfig = 7;
+}
+
+message KunlunWarPlayerDisplayInfo {
+  optional int64 playerId = 1;
+  optional int32 appearanceId = 2;
+  optional string nickName = 3;
+  optional int64 unionId = 4;
+  optional int32 headIcon = 5;
+  optional string wxHeadUrl = 6;
+  optional string power = 7;
+}
+
+message KunlunWarUnionBlockData {
+  optional int64 unionId = 1;
+  optional int32 occupyProgress = 2;
+}
+
+message KunlunWarBlockInfo {
+  optional int32 pos = 1;
+  repeated KunlunWarUnionBlockData unionBlockData = 2;
+  repeated KunlunWarPlayerDisplayInfo displayInfo = 3;
+}
+
+message KunlunWarGameCityInfo {
+  optional int32 cityId = 1;
+  optional bool haveFight = 2;
+  optional int64 unionId = 3;
+  optional int32 hp = 5;
+  optional int32 curHp = 6;
+  optional bool updateType = 7;
+  optional bool destroyed = 8;
+  repeated KunlunWarPlayerDisplayInfo displayInfo = 9;
+  optional int32 flag = 11;
+}
+
+message KunlunWarBackHomeMsg {
+  optional int64 time = 1;
+  optional int32 freeRebirthCount = 2;
+  optional int32 itemRebirthCount = 3;
+  optional string defeatName = 4;
+  optional int32 killCount = 5;
+}
+
+message KunlunWarBackHomeReq { // 219915 — revive (client "复活" popup)
+  optional int32 activityId = 1;
+  optional bool useItem = 2; // false = free daily reborn, true = revive item
+}
+
+message KunlunWarBackHomeResp { // 19915 answer — carries updated reborn counters
+  optional int32 ret = 1;
+  optional KunlunWarBackHomeMsg backHomeMsg = 2;
+}
+
+message KunlunWarPlayerInfo {
+  optional int32 pos = 1; // 0 ⇒ beenKill
+  optional string curPower = 2;
+  optional int32 appearanceId = 4;
+  optional int64 unionId = 5;
+  optional int32 vigor = 6;
+  optional KunlunWarBackHomeMsg backHomeMsg = 7;
+}
+
+message KunlunWarGameRouteInfo {
+  optional int64 playerId = 1;
+  optional int32 fromPoint = 2;
+  optional int32 toPoint = 3;
+  optional int64 time = 4;    // server ms
+  optional int64 arrival = 5; // server ms
+  optional KunlunWarPlayerInfo playerInfo = 6;
+  optional int32 currentRank = 7;
+}
+
+message KunlunWarUnionSimpleInfo {
+  optional int64 unionId = 1;
+  optional string unionName = 2;
+  optional int64 serverId = 3;
+  repeated int32 occupyCity = 4;
+  optional int32 flag = 5;
+}
+
+message KunlunWarFloorGroupCount {
+  optional int32 floorId = 1;
+  optional int32 groupCount = 2;
+  repeated int32 groupIdList = 3;
+}
+
+message KunlunWarRoundSettleData {
+  optional int32 round = 1;
+  optional int32 statues = 2;
+  optional int32 groupRank = 3;
+  optional int32 rank = 4;
+  optional int32 rankScore = 5;
+  optional int32 totalScore = 6;
+  optional int32 cityCount = 7;
+  optional int32 playerKillCount = 8;
+  optional string unionName = 9;
+  optional string first_unionName = 10;
+  optional int64 first_serverId = 11;
+  optional int64 first_unionFlag = 12;
+  optional int32 floor = 13;
+  optional int32 group = 14;
+}
+
+message KunlunWarEnterActivityReq { // 219901
+  optional int32 activityId = 1;
+}
+
+message KunlunWarEnterActivityResp {
+  optional int32 ret = 1;
+  optional int32 activityId = 2;
+  optional int32 selfRank = 3;
+  optional int32 group = 4;
+  optional int32 floor = 5;
+  optional int64 unionId = 6;
+  optional int32 position = 7; // 0 = union master
+  optional KunlunWarRoundSettleData roundSettleInfo = 8;
+  repeated KunlunWarFloorGroupCount floorGroupList = 9;
+  repeated KunlunUnionBaseData top3Union = 11;
+  optional bool canWorship = 12;
+  repeated int32 groups = 13; // group ids of our floor
+  optional int32 round = 14;
+  optional int32 rankId = 15;
+  optional int32 realmsType = 16;
+}
+
+message KunlunWarEnterGameReq { // 219902
+  optional int32 activityId = 1;
+}
+
+message KunlunWarEnterGameResp {
+  optional int32 ret = 1;
+  optional int32 home = 2; // home cityId
+  optional bool leftout = 4;
+  optional int32 speedUpCount = 5;
+  optional int32 energy = 6;
+  optional int64 energyRecoverTime = 7;
+  repeated KunlunWarUnionSimpleInfo unionInfo = 8;
+  optional int64 exp = 11;
+  optional string power = 12;
+  optional KunlunWarPlayerInfo myPlayerInfo = 13;
+  optional int32 rank = 15;
+  optional int32 rankScore = 16;
+  optional int32 totalCostEnergy = 18;
+  optional int64 friendUnionId = 20;
+}
+
+message KunlunWarGameBlockInfoReq { // 219903 view-window block detail
+  optional int32 activityId = 1;
+  repeated int32 blockVec = 2;
+  optional int32 floorId = 3;
+  optional int32 groupId = 4;
+}
+
+message KunlunWarGameBlockInfoResp {
+  optional int32 ret = 1;
+  repeated KunlunWarGameCityInfo cityInfo = 2;
+  repeated KunlunWarGameRouteInfo routeInfo = 3;
+  optional int32 floorId = 4;
+  optional int32 groupId = 5;
+  repeated KunlunWarBlockInfo blockInfo = 6;
+}
+
+message KunlunWarMonsterMsg {
+  optional int64 id = 1;
+  optional int32 configId = 2;
+  optional string maxBloods = 3;
+  optional string remainBloods = 4;
+  optional bool defeat = 5;
+}
+
+message KunlunWarEventInfo {
+  optional int32 eventId = 1;
+  optional KunlunWarMonsterMsg monster = 4;
+}
+
+message KunlunWarMoveReq { // 219904 targetPoint = posIndex
+  optional int32 activityId = 1;
+  optional int32 targetPoint = 2;
+  optional bool attackCity = 3;
+}
+
+message KunlunWarMoveResp {
+  optional int32 ret = 1;
+  optional KunlunWarGameRouteInfo routeInfo = 2;
+  optional int32 energy = 3;
+}
+
+message KunlunWarExploreReq { // 219905
+  optional int32 activityId = 1;
+  optional int32 targetPoint = 2;
+}
+
+message KunlunWarExploreResp {
+  optional int32 ret = 1;
+  optional string reward = 2;
+  optional int32 energy = 3;
+  optional KunlunWarEventInfo event = 4;
+  optional int32 occupyProgress = 5;
+  optional int64 exp = 6;
+  optional string power = 7;
+  optional int64 energyRecoverTime = 8;
+  optional int32 rank = 9;
+  optional int32 rankScore = 10;
+  optional int32 totalCostEnergy = 11;
+  optional string maxPower = 12;
+}
+
+message KunlunWarSweepReq { // 219906
+  optional int32 activityId = 1;
+  optional int32 num = 2;
+}
+
+message KunlunWarSweepResp {
+  optional int32 ret = 1;
+  optional string reward = 2;
+  optional int32 energy = 3;
+  optional KunlunWarEventInfo event = 4;
+  optional string power = 5;
+  optional int64 exp = 6;
+  optional int64 energyRecoverTime = 7;
+  optional int32 rank = 8;
+  optional int32 rankScore = 9;
+  optional int32 totalCostEnergy = 10;
+  optional string maxPower = 11;
+}
+
+message KunlunWarWorshipReq { // 219907
+  optional int32 activityId = 1;
+}
+
+message KunlunWarWorshipResp {
+  optional int32 ret = 1;
+  optional string reward = 2;
+}
+
+message KunlunWarGroupInfoReq { // 219909
+  optional int32 activityId = 1;
+  optional int32 groupId = 2;
+  optional int32 floorId = 3;
+}
+
+message KunlunWarGroupBaseMsg {
+  optional int64 unionId = 1;
+  optional string unionName = 2;
+  optional int32 flag = 3;
+  optional string masterName = 4;
+  optional int32 rank = 5;
+  optional int64 cityScore = 6;
+  optional int64 serverId = 7;
+  optional string friendUnionName = 8;
+}
+
+message KunlunWarGroupInfoResp {
+  optional int32 ret = 1;
+  repeated KunlunWarGroupBaseMsg groupInfo = 2;
+}
+
+message KunlunWarSimpleBlockInfoReq { // 219916 ad-hoc block detail
+  optional int32 activityId = 1;
+  repeated int32 blockVec = 2;
+  optional int32 floorId = 3;
+  optional int32 groupId = 4;
+}
+
+message KunlunWarSimpleBlockInfoResp {
+  optional int32 ret = 1;
+  repeated KunlunWarBlockInfo blockInfo = 2;
+  repeated KunlunWarGameCityInfo cityInfo = 3;
+}
+
+message KunlunWarMiniMapInfoReqMsg { // 219919 WHOLE-MAP ownership snapshot
+  optional int32 activityId = 1;
+  optional int32 floor = 2;
+  optional int32 group = 3;
+}
+
+message KunlunWarMiniCityInfo {
+  optional int32 cityId = 1;
+  optional bool haveFight = 2;
+  optional int64 unionId = 3;
+}
+
+message KunlunWarMiniCellInfo {
+  optional int32 index = 1;
+  optional bool haveFight = 2;
+  optional int64 unionId = 3;
+}
+
+message KunlunWarMiniMapInfoRespMsg {
+  optional int32 ret = 1;
+  repeated KunlunWarMiniCityInfo cityInfo = 2; // all 37 cities
+  repeated KunlunWarMiniCellInfo cellInfo = 3; // all blocks
+  repeated KunlunUnionBaseData baseData = 4;   // union id→name/flag
+}
+
+message KunlunWarLeaveReq { // 219958
+  optional int32 activityId = 1;
+}
+
+message KunlunWarLeaveResp {
+  optional int32 ret = 1;
+}
+
+message KunlunWarHeartBeatReqMsg { // 219917 keep-in-scene, 15s cadence
+  optional int32 activityId = 1;
+}
+
+message KunlunWarHeartBeatRespMsg {
+  optional int32 ret = 1;
+}
+
+message KunlunWarAcclerateMoveReqMsg { // 219918 march speed-up (client "加速");
+  optional int32 activityId = 1;      // speedUpCount = current counter, the
+  optional int32 speedUpCount = 2;    // server's validation baseline (echoed back)
+}
+
+message KunlunWarAcclerateMoveRespMsg { // 19918 answer
+  optional int32 ret = 1;
+  optional string costInfo = 2;
+  optional int32 speedUpCount = 3;
+}
+
+// Fruit tree (天地灵石): SPAR_INFO (219910) reports the ripeness flag,
+// GET_SPAR_POWER (219911) CLAIMS the ready fruit. The reward amount is
+// server-decided — the request carries no count, so no "5hp per claim" is
+// possible client-side. Reward is an encoded string the client just displays.
+message KunlunWarSparInfoReqMsg { // 219910
+  optional int32 activityId = 1;
+}
+
+message KunlunWarWelfareInfo {
+  optional string name = 1;
+  optional int32 itemId = 2;
+  optional int64 id = 3;
+  optional int32 status = 4;
+  optional int64 time = 5;
+}
+
+message KunlunWarSparInfoRespMsg { // 19910 answer
+  optional int32 ret = 1;
+  optional int32 exp = 2;
+  repeated KunlunWarWelfareInfo info = 3;
+  optional int32 canReceive = 4; // 1 = fruit ready to claim
+}
+
+message KunlunWarGetSparPowerReqMsg { // 219911 claim
+  optional int32 activityId = 1;
+}
+
+message KunlunWarGetSparPowerRespMsg { // 19911 answer
+  optional int32 ret = 1;
+  optional string reward = 2; // server-decided payout (encoded string)
+  optional int32 exp = 3;
+  optional int32 canReceive = 4; // next-fruit ripeness after the claim
+}
+
+// GET_WELFARE (219912, client reqWaterMsg): "领取盟友发送的灵液福利，为天地
+// 灵石注能" — COLLECT an ally's sent spirit-liquid welfare and water the
+// guild tree with it. Receiving side is free (the SENDER spent a liquid in
+// SEND_WELFARE 219913 — which stays un-implemented under the item ban).
+// Field numbers mirror the sibling claims (activityId=1, id=2): if the wire
+// ever disagrees, id decodes as 0 = the client's own "collect ALL" (the
+// plant view's gotBtn sends {id:0}), which is exactly what the auto loop
+// sends — a wrong guess cannot select a wrong welfare entry.
+message KunlunWarGetWelfareReqMsg { // 219912
+  optional int32 activityId = 1;
+  optional int64 id = 2; // welfare notice id (from 19910 info[].id); 0 = ALL
+}
+
+message KunlunWarGetWelfareRespMsg { // 19912 answer
+  optional int32 ret = 1;
+  optional string reward = 2; // payout receipt, pipe-delimited "id=count|id=count" (live-proved 2026-10-07: "100009=4|100080=23|…")
+  optional int32 exp = 3;
+  optional int32 canReceive = 4;
+}
+
+message KunlunWarUseItemReqMsg { // 219926 "cắn quả" — eat a picked spirit fruit.
+  // USER-AUTHORIZED item op (packet capture 2026-10-06: {activityId:9062372,
+  // itemId:105248, num:2}). itemId must be a fruit id SEEN in this account's
+  // 19911 reward string — never invented. The only kunlun item touch besides
+  // the authorized revive.
+  optional int32 activityId = 1;
+  optional int32 itemId = 2;
+  optional int32 num = 3;
+}
+
+message KunlunWarUseItemRespMsg { // 19926 answer
+  optional int32 ret = 1;
+  optional int32 energy = 2; // server's post-eat energy (client Mgr: updateEnergy)
+  optional int64 energyRecoverTime = 3;
+}
+
+// ---- push-only syncs (no request) ----
+
+message KunlunWarBlockSync { // 219931
+  repeated KunlunWarBlockInfo blockInfo = 1;
+}
+
+message KunlunWarCitySync { // 219932
+  repeated KunlunWarGameCityInfo cityInfo = 1;
+}
+
+message KunlunWarMyGameInfoSyncMsg { // 219933
+  optional int32 activityId = 1;
+  optional int32 location = 2;
+  optional string curPower = 3;
+  optional string maxPower = 4;
+  optional int64 attackCd = 5;
+  optional int32 vigor = 6;
+}
+
+message KunlunWarBeenKillSyncMsg { // 219940
+  optional int32 activityId = 1;
+  optional int32 cityId = 2;
+  optional int64 targetId = 3;
+  optional string targetName = 4;
+  optional bool killByNPc = 5;
+  optional int64 reviveTime = 6; // server ms
+  optional int32 killCount = 7;
+}
+
+message KunlunWarLeftOutSyncInfo { // 219941 union eliminated
+  optional int32 activityId = 1;
+  optional int64 unionId = 2;
+  repeated int32 blockIndex = 3;
+  repeated KunlunWarGameCityInfo cityInfo = 4;
+  repeated KunlunWarGameLineInfo lineInfo = 5;
+}
+
+message KunlunWarCityBattleState {
+  optional int32 cityId = 1;
+  optional bool isBattle = 2;
+}
+
+message KunlunWarGameCityBattleSyncMsg { // 219942
+  repeated KunlunWarCityBattleState cityStates = 1;
+}
+
+message KunlunGameRouteInfoSyncMsg { // 219943
+  repeated KunlunWarGameRouteInfo routeInfo = 2;
+}
+
+message KunlunWarGameLinePlayerInfo {
+  optional string name = 1;
+  optional string power = 2;
+  optional int64 union = 3;
+  optional int64 playerId = 5;
+  optional bool npc = 6;
+  optional string unionName = 7;
+  optional string maxPower = 8;
+}
+
+message KunlunWarBattlePlayer {
+  optional int32 realmsType = 1;
+  optional KunlunWarGameLinePlayerInfo playerInfo = 2;
+  optional int32 killCount = 3;
+}
+
+message KunlunWarCityBattleMsg {
+  optional int32 cityId = 1;
+  optional KunlunWarBattlePlayer winner = 2;
+  repeated KunlunWarBattlePlayer loser = 3;
+  optional int64 battleTime = 4;
+  optional bool attackSpeedUp = 5;
+}
+
+message KunlunWarCellBattleMsg {
+  optional int32 cellId = 1;
+  optional KunlunWarBattlePlayer winner = 2;
+  repeated KunlunWarBattlePlayer loser = 3;
+}
+
+message KunlunWarPlayerPowerChangeInfo {
+  optional int32 cityId = 1;
+  optional int64 playerId = 2;
+  optional string power = 3;
+  optional int32 vigor = 4;
+  optional int64 time = 5;
+}
+
+message KunlunWarGameLineInfo {
+  optional int32 inCityId = 1;
+  optional int32 outCityId = 2;
+  optional int32 inLineType = 3;  // 0 march-home synth, 1 block, 2 city
+  optional int32 outLineType = 4; // 2 leaving city, else leaving block
+  optional int64 playerId = 5;
+  optional KunlunWarPlayerDisplayInfo playerInfo = 6;
+}
+
+message KunlunWarGameLineInfoSyncMsg { // 219944 arrivals/queue battles
+  repeated KunlunWarGameLineInfo lineInfo = 1;
+  repeated KunlunWarCityBattleMsg cityBattleInfo = 2;
+  repeated KunlunWarCellBattleMsg cellBattleInfo = 3;
+  repeated KunlunWarPlayerPowerChangeInfo powerChange = 4;
+}
+
+message KunlunWarAttackCityInfo {
+  optional int32 cityId = 1;
+  optional int32 curHp = 2;
+  repeated KunlunWarPlayerDisplayInfo playerIds = 3;
+}
+
+message KunlunWarAttackCitySyncMsg { // 219948 siege hp + attackers
+  repeated KunlunWarAttackCityInfo attackCityInfo = 1;
+}
+
+message KunlunWarGroupRankSync { // 219950
+  optional int64 unionId = 1;
+  optional int64 score = 2;
+  optional int64 rank = 3;
+  optional int32 cityId = 4;
+}
+
+// ---- CastSword / "Luyện Khí Đại Hội" (2048-style weapon-merge board,
+// systemOpenId CASTSWORD=119; opcodes 2011901..2011908). Schema recovered
+// 2026-10-08 EMPIRICALLY on a live account (CDN .pb.json unreachable):
+// requests follow the activityId-first convention; response fields were read
+// off the wire with a schema-less walk. The board is 16 ORDERED cells
+// (row-major 4x4); cell.level 0 = empty, n = weapon tier n (value 2^n).
+// Direction is 1=UP, 2=DOWN, 3=LEFT, 4=RIGHT — pinned by replaying the
+// server's own board transitions from the live probe. Each MOVE costs 1
+// strength (field 3) and the server secretly spawns fresh tier-1 tiles.
+message CastSwordEnterReq { // 2011901
+  optional int32 activityId = 1;
+}
+
+message CastSwordMoveReq { // 2011902
+  optional int32 activityId = 1;
+  optional int32 direction = 2; // 1=UP 2=DOWN 3=LEFT 4=RIGHT
+}
+
+message CastSwordSettlementReq { // 2011903
+  optional int32 activityId = 1;
+}
+
+message CastSwordGetRewardReq { // 2011905
+  optional int32 activityId = 1;
+}
+
+message CastSwordCellInfo {
+  optional int32 level = 1; // 0 empty, n = tier n
+}
+
+message CastSwordToolInfo { // item counts are DISPLAY only — never spend (item ban)
+  optional int32 itemId = 1;
+  optional int32 count = 2;
+}
+
+message CastSwordBaseData {
+  optional int32 score = 1;      // points this run (merge values)
+  optional int32 highScore = 2;  // personal best
+  optional int32 strength = 3;   // remaining moves this session
+  repeated CastSwordCellInfo cells = 4; // exactly 16, row-major
+  repeated CastSwordToolInfo tools = 5; // swap/up/break counts
+}
+
+message CastSwordEnterResp { // 11901 = "2e7d"
+  optional int32 ret = 1;
+  optional CastSwordBaseData entity = 2;
+  optional int64 refreshTime = 3;    // ms epoch of next strength refresh
+  optional int32 rank = 4;           // live: 0 early
+  optional int32 nextRankScore = 5;  // live: ~970s (rank ladder target)
+}
+
+message CastSwordMoveResp { // 11902 = "2e7e"
+  optional int32 ret = 1;
+  optional CastSwordBaseData entity = 2;
+  optional bool isGameEnd = 3;   // board dead / strength exhausted
+  optional int32 field4 = 4;     // live: always 0 so far
+}
+
+message CastSwordSettlementResp { // 11903 = "2e7f"
+  optional int32 ret = 1;
+  optional int32 score = 2;
+  optional int32 rank = 3;
+}
+
+// ---------------------------------------------------------------------------
+// RebornTrial (Luân Hồi Bí Cảnh / 轮回秘境, systemOpenId 172) — caravan
+// roguelike with cross-union battle rounds. Schema copied verbatim (field
+// numbers) from the game client's protobuf/RebornTrial asset, decoded live
+// 2026-10-08 into ../remoteRebornTrial/RebornTrial.decoded.proto. Requests
+// 217200..217251, answers = request − 200000. Only the messages the bot
+// reads or writes are declared; proto3 skips the rest of the wire.
+// ---------------------------------------------------------------------------
+
+message RebornTrialActivityReq {
+  int32 activityId = 1;
+}
+
+// Answer of ENTER (217201), EXPLORE (217205) and UP_LEVEL (217204 — never
+// sent by the bot; levels are auto-granted by the server at exp thresholds).
+message RebornTrialDataResp {
+  int32 ret = 1;
+  optional RebornTrialPlayerData playerData = 2;
+}
+
+message RebornTrialPlayerData {
+  optional int32 level = 1;
+  optional int64 exp = 2;
+  optional int64 totalExp = 3;
+  optional int32 map = 4;
+  optional int32 hp = 5;             // caravan energy (stamina)
+  optional int64 hpRecoveryTime = 6;  // ms; energy regen anchor
+  repeated RebornTrialMagicItem magicItem = 7;
+  repeated RebornTrialGoodsItem goodsItem = 8;
+  optional RebornTrialEvent event = 9; // pending event (stat 0 = unresolved)
+  optional int32 battleNum = 10;       // free challenges left
+  optional int64 battleRecoverTime = 11;
+  optional int64 exploreCount = 12;
+}
+
+message RebornTrialMagicItem {
+  optional int32 magicType = 1;
+  optional int32 magicLevel = 2;
+  optional int32 cd = 3;
+}
+
+message RebornTrialGoodsItem {
+  optional int32 id = 1;
+  optional int32 goodsId = 2;
+  optional int32 level = 3;
+  optional int64 value = 4;
+  optional int64 price = 5;
+  optional int32 quality = 6;
+  optional int32 status = 7;
+  optional int32 mask = 8;
+  optional int32 star = 9;
+  optional int32 magicTimes = 10;
+}
+
+// event.type: Buy=1 Sell=2 Suppress=3 Relieve(BREAK)=4 Rescue=5 Bet=6(SMELT?)...
+// per enum RebornTrialEventType: BUY=1 SELL=2 SUPPRESS=3 BREAK=4 RESCUE=5
+// SMELT=6 BET=7 BuyFake=20 SellFake=21 UseMagic=22. stat 0=pending 1=ok 2=fail.
+message RebornTrialEvent {
+  optional int32 type = 1;
+  optional int32 npcId = 2;
+  optional int32 stat = 3;
+  optional int32 value = 4;
+  optional string rewards = 5;
+  optional RebornTrialGoodsItem item = 6;
+  repeated RebornTrialEventOption option = 7;
+  optional int64 param1 = 8;
+  optional int64 param2 = 9;
+  optional int32 npcType = 10;
+}
+
+message RebornTrialEventOption {
+  optional int32 order = 1;
+  optional int64 costExp = 2;
+  optional int32 reduceValue = 3; // energy delta for resolve (negative = gain)
+  optional int32 success = 4;
+  optional int64 param1 = 5;
+  optional int64 param2 = 6;
+}
+
+message RebornTrialEnterActivityResp {
+  int32 ret = 1;
+  optional int32 selfRank = 2;
+  optional int32 round = 3;
+  optional int32 group = 4;
+  optional int32 rankId = 5;
+  optional int64 unionId = 6;
+  repeated int32 groups = 7;
+  optional string unionName = 8;
+  optional bool hasWorship = 11;
+  optional int32 position = 12;
+  optional int32 activityId = 13;
+}
+
+message RebornTrialSelectOptionReq {
+  int32 activityId = 1;
+  int32 selectIndex = 2; // the option's order field
+}
+
+message RebornTrialSelectOptionResp {
+  int32 ret = 1;
+  optional int64 exp = 2;
+  optional int32 hp = 3;
+  repeated RebornTrialGoodsItem goodsItem = 4;
+  optional RebornTrialEvent event = 5;
+  optional int32 level = 6;
+  optional int64 totalExp = 7;
+  repeated RebornTrialMagicItem magicItem = 8;
+}
+
+// answer of SKIP_EVENT (217209) — abandons the pending event for free
+message RebornTrialSkipEventResp {
+  int32 ret = 1;
+  optional RebornTrialEvent event = 2;
+}
+
+// 217207. magicType 1=sửa (repair, goodsId=instance id), 2=ảo hoá (illusion,
+// goodsId=instance id), 3=trấn áp sự kiện (goodsId=0). CD-bearing, free —
+// user authorised "có gì dùng hết" 2026-10-09.
+message RebornTrialUseMagicReq {
+  int32 activityId = 1;
+  int32 magicType = 2;
+  int32 goodsId = 3; // instance id (field 1 of GoodsItem), 0 for magicType 3
+}
+message RebornTrialUseMagicResp {
+  int32 ret = 1;
+  optional RebornTrialGoodsItem goodsItem = 2;
+  optional RebornTrialMagicItem magicItem = 3;
+  optional RebornTrialEvent event = 4;
+}
+
+message RebornTrialWorshipResp {
+  int32 ret = 1;
+  optional string reward = 2;
+}
+
+message RebornTrialUnionBaseMsg {
+  optional int64 unionId = 1;
+  optional int32 flag = 2;
+  optional string name = 3;
+  optional int64 serverId = 4;
+  optional int64 score = 5;
+  optional string masterName = 6;
+}
+
+// answer of BATTLE_ENTER (217230): the battle bracket of this round
+message RebornTrialChallengeListResp {
+  int32 ret = 1;
+  repeated RebornTrialUnionChallengeMsg unionMsg = 2;
+  repeated int64 advanced = 3;
+}
+
+message RebornTrialUnionChallengeMsg {
+  optional RebornTrialUnionBaseMsg base = 1;
+  optional int64 reduceBlood = 2;
+  optional int64 lastBeAttackTime = 3;
+  optional int32 rank = 4;
+  optional bool hasDefeated = 5;
+  optional int64 shieldTriggerTime = 7;
+  optional int32 position = 8;
+}
+
+message RebornTrialChallengeReq {
+  int32 activityId = 1;
+  int64 unionId = 2;
+}
+
+message RebornTrialChallengeResp {
+  int32 ret = 1;
+  optional int32 free = 2;
+  optional int64 battleRecoverTime = 3;
+  optional string rewards = 4;
+  optional int64 addScore = 5;
+  optional int64 reduceScore = 6;
+  optional int32 defeatNum = 8;
+  optional int32 activityId = 9;
+}
+
+message RebornTrialSendBonusItemReq { // 217223 donate union-tree liquid (phát nước)
+  optional int32 activityId = 1;
+  optional int32 itemId = 2;    // one of the RENBORNTRIAL_ITEM_ENERGY ids
+  optional int32 num = 3;       // client sends 1 per press (long-press repeat)
+}
+
+message RebornTrialSendBonusItemResp { // 217223 → 4347
+  optional int32 ret = 1;
+  optional RebornTrialBonusInfo info = 2; // updated notice for the water board
+}
+
+message RebornTrialBonusResp {
+  int32 ret = 1;
+  optional int32 exp = 2;
+  repeated RebornTrialBonusInfo info = 3; // water notices ready to claim
+  optional int32 canReceive = 4;
+}
+
+// One line of the union tree's water board (BONUS_REQ answer). status 0 =
+// unclaimed, id = the GET_BONUS_ITEM argument (id=0 client-side = claim all).
+message RebornTrialBonusInfo {
+  optional string name = 1;
+  optional int32 itemId = 2;
+  optional int64 id = 3;
+  optional int32 status = 4;
+  optional int64 time = 5;
+}
+
+message RebornTrialGetBonusResultResp {
+  int32 ret = 1;
+  optional string reward = 2;
+  optional int32 exp = 3;
+  optional int32 canReceive = 4;
+}
+
+// id = 0 claims every ready water/reward
+message RebornTrialGetBonusItemReq {
+  int32 activityId = 1;
+  int64 id = 2;
+}
+
+message RebornTrialGetBonusItemResp {
+  int32 ret = 1;
+  optional string reward = 2;
+  optional int32 canReceive = 4;
+}
+
+// 217208 USE_ITEM — the ONLY sanctioned send is the owner's explicit
+// "/luanhoi_ve" ticket command (challenge-count ticket, item id from
+// RENBORNTRIAL_CHALLENGE_ITEM). Auto loops NEVER send it [[tytd-item-ban]].
+message RebornTrialUseItemReq {
+  int32 activityId = 1;
+  optional int32 itemId = 2;
+  optional int32 num = 3;
+}
+message RebornTrialUseItemResp {
+  int32 ret = 1;
+  optional int32 value = 2;              // stamina restored (energy item)
+  optional int64 lastRecoveryTime = 3;
+  optional int32 battleNum = 4;          // challenges left after use
+}
+
+// 217232 BATTLE_HEART — scene keep-alive, ret-only answer 4350.
+message RebornTrialChallengeHeartBeatReq {
+  int32 activityId = 1;
+}
+message RebornTrialChallengeHeartBeatResp {
+  int32 ret = 1;
+}
+
+// 217231 BATTLE_UNIONPLAYER — the base's stationed members. LIVE WIRE (answer
+// 434f, 2026-10-09): ret=1, then unmodeled server-version scalars, and the
+// member list rides field 7 (the decoded CDN .proto says 2 — the wire wins).
+message RebornTrialUnionPlayerListReq {
+  int32 activityId = 1;
+  optional int64 unionId = 2;
+}
+message RebornTrialUnionBattlePlayerMsg {
+  optional int32 appearanceId = 1;
+  optional int32 cloudId = 2;
+  optional int64 exp = 3;
+  optional string nickName = 4;
+}
+message RebornTrialUnionPlayerListResp {
+  int32 ret = 1;
+  repeated RebornTrialUnionBattlePlayerMsg playerList = 7;
+}
+
+// The base fields a fight push names (answer-free server push).
+message RebornTrialUnionChallengeSimpleMsg {
+  optional int64 unionId = 1;
+  optional int64 leftHp = 2;
+  optional int64 finalFame = 3;
+  optional bool hasDefeated = 4;
+  optional int64 shieldTriggerTime = 5;
+  optional int32 level = 6;
+}
+
+// 217234 BATTLE_NOTIC_SYNC push: "X's union hit base Y for D".
+message RebornTrialChallengeInfoSync {
+  optional int64 playerId = 1;
+  optional string unionName = 2;
+  optional string name = 3;
+  repeated int64 advanced = 4;
+  optional RebornTrialUnionChallengeSimpleMsg targetUnion = 6;
+  optional int64 damage = 8;
+}
+
+message RebornTrialGuessDataResp {
+  int32 ret = 1;
+  repeated int64 unionIdArr = 3;
+  repeated int32 rewardRankAchieve = 4;
+  optional bool isReceive = 5;
+}
+
+message RebornTrialGuessRewardResp {
+  int32 ret = 1;
+  optional string rewards = 2;
+}
+
+// AUTO_EXPLORE (217251). settingItems mirrors the client defaults; the
+// engine sends the client's own table (see player_reborntrial.go).
+message RebornTrialAutoSettingItem {
+  int32 event = 1;
+  repeated int32 EventSetting = 2;
+}
+
+message RebornTrialAutoExploreReq {
+  int32 activityId = 1;
+  repeated RebornTrialAutoSettingItem settingItems = 2;
+}
+
+message RebornTrialAutoResultMsg {
+  int32 ret = 1;
+  repeated int32 codes = 2;
+  repeated bytes msgs = 3;
+}
+
+message RebornTrialAutoExploreRsp {
+  int32 ret = 1;
+  optional RebornTrialPlayerData playerData = 2;
+  optional int32 stopType = 3;
+  repeated RebornTrialAutoResultMsg results = 4;
+  optional int32 hp = 5;
+}
+
+// uniqueConfig of the 21003 detail answer (RebornTrialConfigSync).
+message RebornTrialLevelConfig {
+  optional int32 level = 1;
+  optional int64 exp = 2;
+  optional int32 map = 3;
+  optional string treasure = 4;
+  optional int32 cost = 5; // energy spent per explore at this level
+  optional string goodsLevel = 6;
+  optional string event = 7;
+  optional string refusePower = 8;
+  optional string moneyRange = 9;
+  optional int64 moneyTriggerBound = 10;
+  optional int64 score = 11;
+}
+
+message RebornTrialTimeConfig {
+  optional int32 timeId = 1;
+  optional int32 type = 2;      // 1 SignIn, 2 Prepare, 3 Battle round
+  optional int32 beginTime = 3; // hours offset from activity begin
+  optional int32 durationTime = 4; // hours
+  optional string param = 5;
+}
+
+// ItemConfig row — the client's getGoodsConfig(): isMagic>0 marks the
+// dharma-treasure goods themselves (never repair/illusion candidates).
+message RebornTrialItemConfig {
+  optional int32 itemId = 1;
+  optional int64 priceRate = 2;
+  optional int32 isMagic = 3;
+}
+
+message RebornTrialConfigSync {
+  int32 activityId = 1;
+  repeated RebornTrialLevelConfig levelConfig = 2;
+  repeated RebornTrialItemConfig itemConfig = 4;
+  repeated RebornTrialTimeConfig timeConfig = 9;
+}
+
+// ---- Đan Giới / Linh Điền (Elixir, 235500-series) ----
+// Schema from ../remoteElixir/Elixir.decoded.proto (mined from CDN TextAsset,
+// owner audit 2026-10-16). Resp opcode = req % 100000 (ENTER_HOME 235502→8aae,
+// PLANT 235504→8ab0, WATER 235505→8ab1, GET 235506→8ab2). ElixirGetTimeWaterReq
+// already exists above (player_water.go) — NOT redeclared. Subset of fields the
+// auto loop reads; unknown fields ride past (proto3 open).
+//
+// Gameplay model (owner-confirmed): plants SELF-GROW on a timer — watering is an
+// OPTIONAL instant speed-up, never required, so never hoard water. DƯỢC LINH =
+// Elves (药灵): a plant only rolls the spirit herb if isPlantElves was ticked at
+// plant time; server caps 30/day, so the bot always sets the flag and lets the
+// server zero it out.
+
+// PlayerHeadAndNameMsg subset — only what the loop needs to ignore/label.
+message ElixirPlayerHead {
+  optional int64 playerId = 1;
+  optional string name = 2;
+}
+
+message ElixirGrassInfo {
+  optional int32 grassId = 1;
+  optional int32 lv = 2;
+  optional int32 num = 3;
+}
+
+message ElixirLandInfo {
+  optional int32 landId = 1;
+  optional int32 state = 2;
+  optional int32 grassId = 3;
+  optional int32 grassLv = 4;
+  optional int64 roundStartTime = 5;
+  optional int32 canAwardRound = 6;
+  optional int32 elvesNum = 7;
+  optional bool canRob = 8;
+  optional int32 hadReceiveRound = 9;
+  optional int32 canAwardElvesNum = 10;
+}
+
+message ElixirUserInfo {
+  optional ElixirPlayerHead playerInfo = 1;
+  optional int32 exp = 2;
+  optional int32 water = 3;
+  optional bool elvesOpenOff = 4;
+  repeated ElixirGrassInfo grassInfos = 5;
+  optional int32 dailyRobNum = 6;
+  optional int32 waterBucket = 11;
+  optional int64 lastRecoverWaterBucketTime = 12;
+}
+
+message ElixirEnterHomeReq {
+  optional int64 playerId = 1;
+}
+
+message ElixirLandRoundAward {
+  optional string reward = 1;
+  optional int32 speed = 2;
+  optional string lvReward = 3;
+}
+
+message ElixirLandReward {
+  optional int32 landId = 1;
+  repeated ElixirLandRoundAward roundAwards = 2;
+}
+
+// Đơn hàng Dược Tiên (owner 2026-10-17 bug round): the order panel inside
+// Đan Giới — destiny (Dược Tiên ghé thăm) + pet + trans (vận đơn) orders.
+// The 53xxxx/55xxxx ct506 "hoàn thành N đơn hàng Dược Tiên" tasks ride this
+// panel. Subset of Elixir.decoded.proto; the bot reads the required grassIds
+// (plant-the-right-tree) AND auto-submits destiny orders (235515, owner
+// directive 2026-10-17 "bot phải tự nộp đơn hàng") — give-up/refresh stay
+// human-only.
+message ElixirDanYaoInfo {
+  optional int32 danYaoId = 1;
+  optional int32 num = 2;
+  optional int32 eatNum = 3;
+}
+message ElixirDestinyOrderInfo {
+  optional int32 destinyId = 1;
+  repeated ElixirGrassInfo grassInfos = 2;
+}
+message ElixirPetOrderInfo {
+  optional int32 petId = 1;
+  repeated ElixirDanYaoInfo danYaoInfos = 2;
+  optional int64 giveUpTime = 3;
+  optional int32 configId = 4;
+  optional int32 pos = 5;
+}
+message ElixirTransOrderInfo {
+  repeated ElixirGrassInfo grassInfos = 1;
+  optional int64 startTime = 2;
+  optional bool isOver = 3;
+  optional int32 refreshNum = 4;
+}
+message ElixirOrderInfo {
+  repeated ElixirDestinyOrderInfo destinyOrderInfos = 1;
+  optional int64 lastDestinyOrderTime = 2;
+  repeated ElixirPetOrderInfo petOrderInfos = 3;
+  optional int64 lastPetOrderTime = 4;
+  repeated ElixirTransOrderInfo transOrderInfos = 5;
+  optional int32 todayDestinyCompleteTimes = 6;
+  optional int32 todayPetCompleteTimes = 7;
+}
+message ElixirPushOrderReq {
+  optional int32 type = 1; // wire-required in the game's proto2 schema
+  optional int32 index = 2;
+}
+message ElixirPushOrderResp {
+  optional int32 ret = 1; // wire-required in the game's proto2 schema
+  repeated ElixirGrassInfo grassInfos = 2;
+  repeated ElixirDanYaoInfo danYaoInfos = 3;
+  optional string rewards = 4;
+}
+message ElixirBattleTaskInfo {
+  optional int32 taskId = 1;
+  optional int32 configId = 2;
+  optional int32 curProgress = 3;
+  optional int64 deleteTime = 5;
+  optional int64 startTime = 6;
+  optional int32 slotId = 7;
+  optional int64 createTime = 8;
+  optional string params = 9;
+}
+message ElixirEnterHomeResp {
+  optional int32 ret = 1;
+  optional ElixirUserInfo userInfo = 2;
+  repeated ElixirLandInfo lands = 3;
+  optional ElixirOrderInfo orderInfo = 4; // đơn hàng Dược Tiên (f4, live)
+  optional ElixirBattleTaskInfo curTask = 10; // battle-task board (f10)
+}
+
+message ElixirPlantGrassInfo {
+  optional int32 landId = 1;
+  optional int32 grassId = 2;
+}
+
+message ElixirPlantGrassReq {
+  repeated ElixirPlantGrassInfo grassInfo = 1;
+  optional bool oneKey = 2;
+  optional bool isPlantElves = 3; // "thu hút dược linh" — MUST be true to roll Elves
+}
+
+message ElixirDelPlantGrassReq {
+  repeated int32 landId = 1 [packed = false];
+  optional bool oneKey = 2;
+}
+
+message ElixirDelPlantGrassResp {
+  optional int32 ret = 1;
+  repeated ElixirLandInfo landInfo = 2;
+  optional string reward = 3;
+  optional ElixirUserInfo userInfo = 4;
+}
+
+message ElixirPlantGrassResp {
+  optional int32 ret = 1;
+  repeated ElixirLandInfo land = 2;
+}
+
+message ElixirWaterGrassReq {
+  repeated int32 landId = 1;
+  optional bool oneKey = 2;
+}
+
+message ElixirWaterGrassResp {
+  optional int32 ret = 1;
+  repeated ElixirLandInfo land = 2;
+  optional ElixirUserInfo userInfo = 3;
+}
+
+message ElixirGetGrassReq {
+  repeated int32 landId = 1;
+  optional bool oneKey = 2;
+}
+
+message ElixirGetGrassResp {
+  optional int32 ret = 1;
+  repeated ElixirLandInfo land = 2;
+  repeated ElixirGrassInfo grassInfo = 3;
+  repeated ElixirLandReward landRewards = 4;
+}
+
+// Dược Linh mini-panel (235550 ElixirElvesEnter → 8ade). Read-only answer:
+// todayGetCount is the /30 daily counter the game UI shows under the
+// "thu hút dược linh" list. Subset of the original (slots/draw/dispatch are
+// the pharmacy minigame — bot never touches them).
+message ElixirElvesPlayerData {
+  optional int32 todayGetCount = 1;
+  optional int32 todayStealCount = 2;
+}
+
+message ElixirElvesEnterResp {
+  optional int32 ret = 1;
+  optional ElixirElvesPlayerData elvesPlayerData = 2;
+}
+
+// 235561 ElixirElvesDrawSeasonSync (resp 8ae9): server PUSHES this at login
+// and on season rollover — no request needed. seasonNum drives the bonus
+// grass id = 864001+3*(season-1) (baked table ELIXIR_PERI_GRASS_BONUS, live
+// 2026-10-16: season 8 → 864022 Chiếu Mệnh Huyết San Hô).
+message ElixirElvesDrawSeasonSync {
+  optional int32 season = 1;
+  optional int64 startTime = 2;
+  optional int64 endTime = 3;
+}
+
+// ─── Tiên Cảnh Vị Ương (WeYound, systemOpenId 186) ──────────────────────────
+// Decoded from the client's protobuf/WeYound TextAsset (xor-1, "12345"
+// prefix) — ../weyound.decoded.proto in the remoteImmortalIsland work dir.
+// Field numbers below are EXACT copies of that schema (kept sparse where a
+// message field references types we don't model — unknown fields skip on
+// decode). Opcodes + transport proved live 2026-10-17 (tiencanh_opcode_live
+// probe: 218600 → 48a8 …, i.e. resp = req − 200000, same rule as RebornTrial).
+
+message WeYoundPosMsg {
+  optional int32 x = 1;
+  optional int32 y = 2;
+}
+
+message WeYoundEventMsg {
+  optional int64 id = 1;
+  optional int32 configId = 2;
+  optional int64 objId = 3;
+  optional int32 eventType = 5;
+}
+
+message WeYoundCellMsg {
+  optional WeYoundPosMsg pos = 1;
+  // 1 Fog, 2 Event, 3 Blank, 4 Obstacle, 5 NextFloor, 7 Base, 8/9 RewardBox
+  optional int32 type = 2;
+  optional WeYoundEventMsg event = 3;
+  optional bool reachable = 4;
+  optional WeYoundPosMsg root = 5;
+  optional int64 tag = 6;
+}
+
+message WeYoundAttackInfoMsg {
+  optional int64 playerId = 1;
+  optional string name = 2;
+  optional int32 attackNum = 3;
+}
+
+message WeYoundMonsterMsg {
+  optional int64 id = 1;
+  optional int32 configId = 2;
+  optional string maxBloods = 3;
+  optional string remainBloods = 4;
+  optional int64 explorePlayerId = 5;
+  optional bool defeat = 6;
+  optional int64 time = 7;
+  optional int32 eventConfigId = 8;
+  optional string exploreName = 9;
+  repeated WeYoundAttackInfoMsg attackInfo = 10;
+  optional bool exploreReward = 11;
+}
+
+message WeYoundBuffMsg {
+  optional int32 buffId = 1;
+  optional int32 count = 2;
+}
+
+message WeYoundElixirMsg {
+  optional int32 elixirId = 1;
+  optional int32 count = 2;
+}
+
+message WeYoundNpcGiftInfoMsg {
+  optional int32 mallId = 1;
+  optional int64 expiredTime = 2;
+  optional int32 canBuyCount = 3;
+}
+
+message WeYoundPlayerMsg {
+  optional string power = 1;
+  optional int64 point = 2;
+  optional int32 hp = 3;            // stamina (energy); EXPLORE spends it
+  repeated WeYoundBuffMsg buff = 4;
+  optional WeYoundPosMsg pos = 5;
+  optional int64 hpRecoveryTime = 6;
+  optional int32 battleNum = 7;
+  repeated WeYoundCellMsg unDealCell = 8;
+  optional int64 trapEndTime = 9;
+  optional int32 assistNum = 10;
+  repeated int32 rewardFloors = 11;
+  optional bool autoSwitch = 12;
+  optional int32 myRank = 13;
+  optional bool trapSeek = 14;
+  repeated WeYoundElixirMsg elixir = 15;
+  optional int32 costHpCount = 16;  // auto-mode daily counter (AUTO_SWITCH gate)
+  repeated WeYoundNpcGiftInfoMsg npcGiftInfo = 17;
+}
+
+message WeYoundSceneMsg {
+  optional int32 mapId = 1;
+  optional int32 floor = 2;
+  optional WeYoundPlayerMsg player = 3;
+  // f4 member (WeYoundUnionMemberMsg) omitted — not needed
+  repeated WeYoundCellMsg view = 5;
+  repeated WeYoundMonsterMsg monster = 6;
+}
+
+message WeYoundEnterActivityReq {
+  optional int32 activityId = 1;
+}
+
+message WeYoundEnterActivityResp {
+  optional int32 ret = 1;
+  optional int32 selfRank = 2;
+  optional int32 round = 3;
+  optional int32 group = 4;
+  optional int32 rankId = 5;
+  optional int64 unionId = 6;
+  repeated int32 groups = 7;
+  optional string unionName = 8;
+  // f9 worshipPlayer (PalacePlayerShowMsg) omitted
+  // f10 top3Unions omitted
+  optional bool hasWorship = 11;
+  optional int32 position = 12;
+  optional int32 hpCostCount = 14;
+}
+
+message WeYoundEnterReq {
+  optional int32 activityId = 1;
+  optional bool enterNext = 2; // advance to next floor
+}
+
+message WeYoundEnterResp {
+  optional int32 ret = 1;
+  optional WeYoundSceneMsg scene = 2;
+  optional int32 noticeNum = 3;
+  optional int32 memberSize = 4;
+}
+
+message WeYoundExploreReq {
+  optional int32 activityId = 1;
+  optional WeYoundPosMsg pos = 2;
+}
+
+message WeYoundExploreResp {
+  optional int32 ret = 1;
+  optional WeYoundPlayerMsg player = 2;
+  optional string rewards = 3;
+  optional WeYoundEventMsg event = 4;
+  repeated int32 buffs = 5;
+  repeated int32 elixirs = 6;
+  repeated int32 points = 7;
+  repeated WeYoundCellMsg view = 8;
+  optional WeYoundMonsterMsg monster = 9;
+}
+
+message WeYoundMoveReq {
+  optional int32 activityId = 1;
+  optional WeYoundPosMsg pos = 2;
+}
+
+message WeYoundMoveResp {
+  optional int32 ret = 1;
+}
+
+message WeYoundDealEventReq {
+  optional int32 activityId = 1;
+  optional WeYoundPosMsg pos = 2;
+  repeated WeYoundPosMsg selectView = 3;
+  optional int32 param1 = 4;
+  optional int32 param2 = 5;
+}
+
+message WeYoundDealEventResp {
+  optional int32 ret = 1;
+  optional string rewards = 2;
+  repeated WeYoundMonsterMsg monster = 3;
+  repeated WeYoundEventMsg event = 4;
+  optional WeYoundPlayerMsg player = 5;
+  repeated int32 buffs = 6;
+  repeated int32 elixirs = 7;
+  repeated int32 points = 8;
+  repeated WeYoundCellMsg view = 9;
+}
+
+// USE_ITEM (218605) deliberately NOT modelled: burning the stamina item
+// (ENERGY_ITEM 105185) is owner-banned for this event [[tytd-item-ban]]
+// ("không cắn item tăng thể lực") — no message, no sender, unsendable.
+
+message WeYoundTrapSeekReq {
+  optional int32 activityId = 1;
+}
+
+message WeYoundTrapSeekResp {
+  optional int32 ret = 1;
+}
+
+message WeYoundWorshipReq {
+  optional int32 activityId = 1;
+}
+
+message WeYoundWorshipResp {
+  optional int32 ret = 1;
+  optional string reward = 2;
+}
+
+message WeYoundRewardFloorReq {
+  optional int32 activityId = 1;
+  optional WeYoundPosMsg pos = 2;
+  optional int32 floor = 3;
+}
+
+message WeYoundRewardFloorResp {
+  optional int32 ret = 1;
+  optional string rewards = 2;
+  repeated int32 rewardFloors = 3;
+  optional string elixirs = 4;
+  optional bool greatDraw = 5;
+  optional WeYoundPlayerMsg playerData = 6;
+}
+
+message WeYoundGetMonsterRewardReq {
+  optional int32 activityId = 1;
+  optional int64 monsterId = 2;
+}
+
+message WeYoundGetMonsterRewardResp {
+  optional int32 ret = 1;
+  optional string rewards = 2;
+  optional WeYoundPlayerMsg player = 3;
+  repeated int32 buffs = 4;
+  repeated int32 elixirs = 5;
+  repeated int32 points = 6;
+}
+
+message WeYoundBonusInfoMsg {
+  optional string name = 1;
+  optional int32 itemId = 2;
+  optional int64 id = 3;
+  optional int32 status = 4;
+  optional int64 time = 5;
+}
+
+message WeYoundBonusReq {
+  optional int32 activityId = 1;
+}
+
+message WeYoundBonusResp {
+  optional int32 ret = 1;
+  optional int32 exp = 2;
+  repeated WeYoundBonusInfoMsg info = 3;
+  optional int32 canReceive = 4;
+}
+
+message WeYoundGetBonusResultReq {
+  optional int32 activityId = 1;
+}
+
+message WeYoundGetBonusResultResp {
+  optional int32 ret = 1;
+  optional string reward = 2;
+  optional int32 exp = 3;
+  optional int32 canReceive = 4;
+}
+
+message WeYoundGetBonusItemReq {
+  optional int32 activityId = 1;
+  optional int64 id = 2;
+}
+
+message WeYoundGetBonusItemResp {
+  optional int32 ret = 1;
+  optional string reward = 2;
+  optional int32 exp = 3;
+  optional int32 canReceive = 4;
+}
+
+message WeYoundSendBonusItemReq {
+  optional int32 activityId = 1;
+  optional int32 itemId = 2;
+  optional int32 num = 3;
+}
+
+message WeYoundSendBonusItemResp {
+  optional int32 ret = 1;
+  optional WeYoundBonusInfoMsg info = 2;
+}
+
+message WeYoundGiftNoticeInfoMsg {
+  // f1 playerData omitted
+  optional int64 recordId = 2;
+  optional int32 status = 3;
+  optional int64 time = 4;
+  optional int32 mallId = 5;
+  optional string rewards = 6;
+}
+
+message WeYoundUnionGiftListReq {
+  optional int32 activityId = 1;
+}
+
+message WeYoundUnionGiftListResp {
+  optional int32 ret = 1;
+  repeated WeYoundGiftNoticeInfoMsg blessingList = 2;
+}
+
+message WeYoundReceiveUnionGiftReq {
+  optional int32 activityId = 1;
+  optional int64 recordId = 2;
+}
+
+message WeYoundReceiveUnionGiftResp {
+  optional int32 ret = 1;
+  optional int32 strength = 2;
+  optional int64 lastRecoveryTime = 3;
+  optional bool isAlreadyGet = 4;
+  optional string rewards = 5;
+}
+
+// Config sync (21003 detailConfig.uniqueConfig) — only the pieces the bot
+// reads: eventConfig rows drive the Select-event auto-choice (client sends
+// param1 = monsterParam − 1 from the folded table).
+message WeYoundEventConfigMsg {
+  optional int32 id = 1;
+  optional int32 type = 2;
+  optional string occupation = 3;
+  optional string param = 4;
+  optional string monsterParam = 5;
+  optional string extraParam = 6;
+  optional string reward = 7;
+  optional int64 points = 8;
+  optional int64 exp = 9;
+  optional string elixir = 10;
+  optional string name = 11;
+  optional string desc = 12;
+}
+
+// WeYoundMapConfigMsg — one floor row of the client's WeYoundConfigSync
+// mapConfig (decoded 2026-10-18 from the xor-1 protobuf/WeYound TextAsset).
+// floor→mapId is what pins WHICH CDN static map json (remoteWeYound/<ver>/
+// json/map<mapId>.json) the client builds its fog grid from; cost is the
+// stamina price of exploring one FOG tile on that floor.
+message WeYoundMapConfigMsg {
+  optional int32 floor = 1;
+  optional int32 mapId = 2;
+  optional int32 cost = 3;
+  optional string reward = 4;
+  optional int32 star = 5;
+  optional int32 points = 6;
+  optional string bossProb = 7;
+  optional string bossParam = 8;
+  optional string event = 9;
+  optional string randomEvent = 10;
+  optional string bossOccupation = 11;
+  optional int32 level = 12;
+  optional int32 bossExp = 13;
+  optional string elixir = 14;
+  optional string extraAttack = 15;
+}
+
+// WeYoundBuffConfigMsg — one row of the client's buffConfig table. The bot
+// only needs id→type: type 1 (BuffType.FreeExplore) exempts the stamina
+// gate on FOG explores (client checkHpEnough).
+message WeYoundBuffConfigMsg {
+  optional int32 id = 1;
+  optional int32 type = 2;
+  optional string param = 3;
+}
+
+message WeYoundConfigSync {
+  optional int32 activityId = 1;
+  repeated WeYoundEventConfigMsg eventConfig = 2;
+  repeated WeYoundBuffConfigMsg buffConfig = 3;
+  repeated WeYoundMapConfigMsg mapConfig = 6;
+}
+
+// Assist (hỗ trợ, owner 2026-11-13 "khi đánh quái không chết, hệ thống sẽ
+// tự gọi hỗ trợ. thêm poll check có ai cần hỗ trợ thì hỗ trợ"). The union
+// assist board: ASSIST_LOG (218608) lists trapped members + monsters whose
+// attacker could not kill them (system auto-called for help); ASSIST (218607)
+// rescues TRAPPED members — the client JS only ever sends playerId[] with
+// monsterId null (monster assist = attacking the monster via DEAL_EVENT,
+// which is wySweepMonsters' job). Shapes from weyound.decoded.proto +
+// WatchPlayer.decoded.proto (PlayerAppearanceDataMsg f1/f2).
+message WeYoundAppearanceMsg {
+  optional int64 playerId = 1;
+  optional string nickName = 2;
+}
+
+message WeYoundUnionMemberMsg {
+  optional WeYoundAppearanceMsg appearance = 1;
+  optional WeYoundPosMsg pos = 2;
+  optional int32 floor = 3;
+  optional int64 trapEndTime = 4;
+  optional bool trapSeek = 5;
+}
+
+message WeYoundAssistReq {
+  optional int32 activityId = 1;
+  repeated int64 playerId = 2;
+  optional int64 monsterId = 3;
+}
+
+message WeYoundAssistResp {
+  optional int32 ret = 1;
+  optional int32 assistNum = 2;
+  optional WeYoundUnionMemberMsg trapInfo = 3;
+  optional WeYoundMonsterMsg monsterInfo = 4;
+  optional string rewards = 5;
+}
+
+message WeYoundAssistLogReq {
+  optional int32 activityId = 1;
+}
+
+message WeYoundAssistLogResp {
+  optional int32 ret = 1;
+  repeated WeYoundUnionMemberMsg trapInfo = 2;
+  repeated WeYoundMonsterMsg monsterInfo = 3;
+  optional int32 assistNum = 4;
+}
+
+// ─── Tây Du Phục Ma (XiYou / remoteXiYou bundle, 231xxx family) ────────────
+// Schema recovered from the CDN TextAsset (xor-1, build 4.0.00.40108):
+// /workspace/remoteAll/taydu/XiYou.decoded.proto. Only the messages the
+// main-stage spam loop touches are declared here.
+
+message XiYouAttributeMsg {
+  int32 type = 1;
+  string value = 2;
+}
+
+message XiYouEquipmentDataMsg {
+  int64 id = 1;
+  int32 equipmentId = 2;
+  int32 level = 3;
+  int32 quality = 4;
+  repeated XiYouAttributeMsg attributeList = 5;
+}
+
+message XiYouUnDealEquipmentDataMsg {
+  XiYouEquipmentDataMsg equipment = 1;
+  string power = 2;
+}
+
+message XiYouDropRewardMsg {
+  string reward = 1;
+  XiYouUnDealEquipmentDataMsg equipmentInfo = 2;
+}
+
+message XiYouBressMsg {
+  int32 bressLev = 1;
+  int64 bressLevEndTime = 2;
+  int32 speedTimes = 3;
+  int64 speedTimeCdEndTime = 4;
+}
+
+message XiYouItemMsg {
+  int32 itemId = 1;
+  int64 itemCount = 2;
+}
+
+// XiYouSkillDataMsg trio — the magic-card loadout the CLIENT feeds
+// buildRoleData (skills/magicWeapon). Without fields 8+17 the sim player
+// fights bare (dies in secret 84 room 1 although the acc clears it —
+// owner 2026-11-05 "acc đủ lực qua 84"; defs from XiYou.decoded.proto).
+message XiYouRunicDataMsg {
+  int32 runicId = 1;
+  int32 runicLevel = 2;
+  int32 runicStage = 3;
+}
+
+message XiYouSkillDataMsg {
+  int32 skillId = 1;
+  int32 currentRunicId = 2;
+  repeated XiYouRunicDataMsg runicDatas = 3;
+}
+
+message XiYouMagicWeaponDataMsg {
+  int64 id = 1;
+  int32 type = 2;
+  int32 weaponId = 3;
+  int32 weaponLevel = 4;
+  int32 enhanceLevel = 5;
+  int32 quality = 6;
+  repeated XiYouAttributeMsg attributeList = 7;
+  int32 isCheck = 8;
+  int32 isLock = 9;
+}
+
+message XiYouUnDealMagicWeaponDataMsg {
+  XiYouMagicWeaponDataMsg magicWeapon = 1;
+  string power = 2;
+}
+
+// Loadout WEAR ops (free equips of owned things — item-ban safe: never the
+// UP*/ENHANCE/SUMMON/UNLOCK family). From XiYou.decoded.proto.
+message XiYouWearSkillReq {
+  int32 activityId = 1;
+  int32 skillId = 2;
+}
+message XiYouWearSkillResp {
+  int32 ret = 1;
+  repeated int32 useSkillIds = 2;
+}
+message XiYouWearPassiveSkillReq {
+  int32 activityId = 1;
+  repeated int32 passiveSkillIds = 2;
+}
+message XiYouWearPassiveSkillResp {
+  int32 ret = 1;
+  repeated int32 passiveSkillIds = 2;
+}
+message XiYouSkillWearRunicReq {
+  int32 activityId = 1;
+  int32 skillId = 2;
+  int32 runicId = 3;
+}
+message XiYouWearSkillRunicResp {
+  int32 ret = 1;
+  XiYouSkillDataMsg skill = 2;
+}
+message XiYouMagicWeaponWearReq {
+  int32 activityId = 1;
+  int64 id = 2;
+}
+message XiYouMagicWeaponWearResp {
+  int32 ret = 1;
+  repeated XiYouMagicWeaponDataMsg magicWeapon = 2;
+  repeated XiYouUnDealMagicWeaponDataMsg unDealMagicWeaponList = 3;
+}
+message XiYouUsePreviewSkillRunicReq {
+  int32 activityId = 1;
+  int32 previewId = 2;
+}
+message XiYouUsePreviewSkillRunicResp {
+  int32 ret = 1;
+  int32 previewId = 2;
+  repeated int32 useSkills = 3;
+  repeated XiYouSkillDataMsg skills = 4;
+  repeated int32 passiveSkillIds = 5;
+}
+message XiYouUsePreviewMagicReq {
+  int32 activityId = 1;
+  int32 previewId = 2;
+}
+message XiYouUsePreviewMagicResp {
+  int32 ret = 1;
+  int32 previewId = 2;
+  repeated XiYouMagicWeaponDataMsg magicWeapon = 3;
+  repeated XiYouUnDealMagicWeaponDataMsg unDealMagicWeaponList = 4;
+}
+
+message XiYouPlayerDataMsg {
+  int32 realmId = 1;
+  string exp = 2;
+  string power = 3;
+  int32 progress = 4;
+  XiYouBressMsg bressMsg = 5;
+  repeated int32 useSkills = 6;
+  int32 heroAppearanceId = 7;
+  repeated XiYouSkillDataMsg skills = 8;
+  repeated int32 passiveSkillIds = 9;
+  repeated XiYouEquipmentDataMsg equpiments = 10; // client's own typo
+  repeated XiYouAttributeMsg attributeList = 11;
+  int32 todayFreeTime = 12;
+  repeated XiYouUnDealEquipmentDataMsg unDealEquipments = 13;
+  repeated XiYouItemMsg items = 14;
+  int32 runicSommonTimes = 15; // client's own typo
+  int32 mainConditonId = 16;   // client's own typo
+  repeated XiYouMagicWeaponDataMsg magicWeapon = 17;
+  int32 currentSecretId = 19;
+  int32 secretDailyReward = 20;
+  int32 initReward = 21;
+  int32 previewSkillId = 22;
+  XiYouSecretAutoSettingMsg autoSet = 23; // ảo cảnh 托管 (cardSelect/starSelect/rate/…)
+  int32 previewMagicId = 24;
+  int32 dailySweepTimes = 25;
+  int32 totalDrawTimes = 26;
+  repeated int32 godRuneId = 27;
+}
+
+message XiYouPlayerDataInfoReq {
+  int32 activityId = 1;
+}
+
+message XiYouPlayerDataInfoResp {
+  int32 ret = 1;
+  XiYouPlayerDataMsg info = 2;
+}
+
+message XiYouAttackReq {
+  int32 activityId = 1;
+  int32 times = 2;
+}
+
+message XiYouAttackResp {
+  int32 ret = 1;
+}
+
+message XiYouRandEquipmentReq {
+  int32 activityId = 1;
+  int32 num = 2;
+}
+
+message XiYouRandEquipmentResp {
+  int32 ret = 1;
+  repeated XiYouDropRewardMsg dropReward = 2;
+  int32 realmId = 3;
+  string exp = 4;
+}
+
+message XiYouUpdateProgressReq {
+  int32 activityId = 1;
+  int32 progress = 2;
+  string codeVersion = 3;
+  repeated int32 levels = 4;
+}
+
+message XiYouUpdateProgressResp {
+  int32 ret = 1;
+  int32 progress = 2;
+  string reward = 3;
+}
+
+message XiYouResolveEquipmentReq {
+  int32 activityId = 1;
+  repeated int64 ids = 2;
+}
+
+message XiYouResolveEquipmentResp {
+  int32 ret = 1;
+  string reward = 2;
+  repeated XiYouUnDealEquipmentDataMsg unDealEquipments = 3;
+}
+
+message XiYouWearEquipmentReq {
+  int32 activityId = 1;
+  int64 id = 2;
+  bool isResolve = 3;
+}
+
+message XiYouWearEquipmentResp {
+  int32 ret = 1;
+  string reward = 2;
+  repeated XiYouUnDealEquipmentDataMsg unDealEquipments = 3;
+}
+
+message XiYouRealmUpLevReq {
+  int32 activityId = 1;
+}
+
+message XiYouRealmUpLevResp {
+  int32 ret = 1;
+  int32 realmId = 2;
+}
+
+message XiYouUpdateSeedReq {
+  int32 activityId = 1;
+  // HIDDEN probe field (not in the client stub — client sends {}). The
+  // client-side XiYouCombatServerData carries seed=2, so the server may parse
+  // seed on the request too. Live-probe 2026-11-05: does resp.seed echo it?
+  int32 seed = 2;
+}
+
+message XiYouUpdateSeedResp {
+  int32 ret = 1;
+  int32 seed = 2;
+}
+
+message XiYouGetSignRewardReq {
+  int32 activityId = 1;
+  int32 conditionId = 2;
+}
+
+message XiYouGetSignRewardResp {
+  int32 ret = 1;
+  string rewards = 2;
+}
+
+message XiYouRedPointReq {
+  int32 activityId = 1;
+}
+
+message XiYouRedPointResp {
+  int32 ret = 1;
+  string data = 2;
+}
+
+// ── Ảo Cảnh / 秘境 (Secret) — 231127/128/129/135/138 (ảo cảnh auto engine,
+// owner 2026-11-05) ──
+
+message XiYouSecretAutoSettingMsg {
+  int32 cardSelect = 1;
+  int32 starSelect = 2;
+  repeated int32 qualityResove = 3; // client's own typo
+  int32 rate = 4;
+  bool isAutoResolve = 5;
+}
+
+message XiYouSecretStartReq {
+  int32 activityId = 1;
+  int32 secretId = 2;
+  int32 rate = 3;
+}
+
+message XiYouSecretStartResp {
+  int32 ret = 1;
+  string rewards = 2;
+  int32 secretId = 3;
+  repeated int32 doorIds = 4;
+  repeated int32 selectedDoorsIds = 5;
+}
+
+message XiYouSecretSelectReq {
+  int32 activityId = 1;
+  int32 secretId = 2;
+  int32 rate = 3;
+  int32 doorId = 4;
+}
+
+message XiYouSecretSelectResp {
+  int32 ret = 1;
+  string rewards = 2;
+  int32 secretId = 3;
+  repeated int32 doorIds = 4;
+  repeated int32 selectedDoorsIds = 5;
+}
+
+message XiYouSecretKillReq {
+  int32 activityId = 1;
+  int32 secretId = 2;
+  int32 rate = 3;
+  repeated int32 useLuckItemIds = 4;
+  string codeVersion = 5;
+  string fightData = 6;
+  repeated int32 levels = 7;
+}
+
+message XiYouSecretKillResp {
+  int32 ret = 1;
+  string rewards = 2;
+  int32 currentSecretId = 3;
+}
+
+message XiYouSecretSweepReq {
+  int32 activityId = 1;
+  int32 secretId = 2;
+  int32 rate = 3;
+  repeated int32 useLuckItemIds = 4;
+}
+
+message XiYouSecretSweepResp {
+  int32 ret = 1;
+  string rewards = 2;
+  int32 dailySweepTimes = 4;
+}
+
+message XiYouSecretAutoSettingReq {
+  int32 activityId = 1;
+  XiYouSecretAutoSettingMsg autoSet = 2;
+}
+
+message XiYouSecretAutoSettingResp {
+  int32 ret = 1;
+}
+
+// ── Thương Minh Yêu Vực (CelestialSeaWar, type 349) ────────────────────────
+// Schema mined 2026-11-09 from the client protobuf/SeaWar asset (xor-1
+// TextAsset) — see csw_sim/SeaWar.proto and [[tytd-seawar-port]].
+// Only the subset the auto engine touches is ported; unknown fields ride
+// proto3 preserve-semantics on the wire and are ignored.
+
+message SeaWarCommonReq {
+  int32 activityId = 1;
+}
+
+message SeaWarEnterResp {
+  int32 ret = 1;
+  bool canWorship = 14;
+  int32 regionId = 15;
+}
+
+message SeaWarPlayerDataMsg {
+  int32 strength = 3;
+  int64 lastRecoveryTime = 4;
+  string power = 5;
+  int32 totalCostStrength = 6;
+  int32 point = 7;
+  string hp = 8;
+  string maxHp = 9;
+  repeated SeaWarGameBuffDataMsg buffVec = 10;
+  int32 regionId = 11;
+  repeated SeaWarEventCompleteDataMsg eventCompleteVec = 12;
+  int32 exp = 13;
+  int32 rank = 14;
+}
+
+message SeaWarGameBuffDataMsg {
+  int32 id = 1;
+  int32 num = 2;
+}
+
+message SeaWarEventCompleteDataMsg {
+  int32 eventId = 1;
+  int32 num = 2;
+}
+
+message SeaWarEnterGameResp {
+  int32 ret = 1;
+  SeaWarPlayerDataMsg playerData = 3;
+  SeaWarEventDataMsg curEventData = 4;
+}
+
+message SeaWarEventDataMsg {
+  int32 eventType = 1;
+  bytes eventInfo = 2;
+  int32 eventId = 3;
+}
+
+message SeaWarExploreResp {
+  int32 ret = 1;
+  SeaWarPlayerDataMsg playerData = 2;
+  SeaWarEventDataMsg eventData = 3;
+  int32 score = 4;
+  int32 unionScore = 5;
+}
+
+message SeaWarHandleEventReq {
+  int32 activityId = 1;
+  int32 eventId = 2;
+  // optional PRESENCE law (owner 2026-11-11): the server unserializes with
+  // proto2 semantics — a missing int is a hard fail, so every int that can
+  // legitimately be 0 MUST be optional + always explicitly set: action=0 is
+  // a box/forge open, id=0 rides monster/skip/mark ops.
+  optional int32 action = 3;
+  optional int64 id = 4;
+}
+
+message SeaWarHandleEventResp {
+  int32 ret = 1;
+  SeaWarPlayerDataMsg playerData = 2;
+  SeaWarEventDataMsg eventData = 3;
+  string reward = 4;
+  int32 score = 12;
+  int32 unionScore = 13;
+  int32 beatScore = 14;
+}
+
+message SeaWarBuffBallMsg {
+  int64 uid = 1;
+  int32 configId = 2;
+}
+
+message SeaWarEvent_ChallengeMonster {
+  int32 monsterId = 1;
+  string monsterPower = 2;
+  string hp = 3;
+  int64 assistId = 4;
+  string maxHp = 5;
+}
+
+message SeaWarEvent_ChallengePlayer {
+  repeated SeaWarEvent_ChallengePlayerData playerData = 1;
+}
+
+message SeaWarEvent_ChallengePlayerData {
+  int64 playerId = 1;
+  string nickName = 2;
+  string fightValue = 3;
+  int32 appearanceId = 4;
+  string hp = 5;      // live hp — "0" after a kill (client setPlayerHp)
+  string maxHp = 6;
+  string unionName = 7;
+  int64 assistId = 8; // ≠0 = already MARKED (client isMark → hides btn_mark)
+  bool isHadAtk = 9;
+  int64 unionId = 10;
+  int32 backOrnamentId = 11;
+}
+
+message SeaWarEvent_ForgeGem {
+  repeated SeaWarBuffBallMsg ballList = 1;
+}
+
+message SeaWarUnionWelfareResp {
+  int32 ret = 1;
+  repeated SeaWarUnionWelfareNoticeInfo noticeInfo = 4;
+  int32 canReceive = 5;
+  int32 waterCount = 6;
+}
+
+message SeaWarUnionWelfareNoticeInfo {
+  string name = 1;
+  int32 liquidId = 2;
+  int64 id = 3;
+  int32 status = 4;
+  int64 time = 5;
+}
+
+message SeaWarUnionWelfareRewardResp {
+  int32 ret = 1;
+  string reward = 2;
+  int32 canReceive = 5;
+}
+
+message SeaWarUnionLiquidRewardReq {
+  int32 activityId = 1;
+  // optional (presence law 2026-11-11): the client's "Nhận nhanh" quick-claim
+  // posts id=0 (claim-all, CommonPlantView pattern) — a bare proto3 int64
+  // DROPS the zero and the server silently no-ops (rbtBonusItemAllBody trap).
+  optional int64 id = 2;
+}
+// 234917 S_SEA_WAR_UNION_SEND_LIQUID — donate 灵液 to the union (spends bag
+// items → item ban [[tytd-item-ban]]; AUTO never sends, owner-authorized
+// button/test presses only). itemId = activity config "SEAWAR_ITEM_ENERGY".
+message SeaWarUnionLiquidSendReq {
+  int32 activityId = 1;
+  optional int32 itemId = 2;
+  optional int32 num = 3;
+}
+// 234918 S_SEA_WAR_UNION_LIQUID_RECORD — view send/claim records (read-only).
+// answer of 234917 — ret is all we read from it.
+message SeaWarUnionLiquidSendResp {
+  int32 ret = 1;
+}
+message SeaWarUnionLiquidRecordReq {
+  int32 activityId = 1;
+  optional int32 type = 2;
+}
+
+message SeaWarHeartBeatReq {
+  int32 activityId = 1;
+  optional bool challengeState = 2;
+}
+
+message SeaWarHeartBeatResp {
+  int32 ret = 1;
+}
+
+message SeaWarNextRegionReq {
+  int32 activityId = 1;
+  int32 nextRegionId = 2;
+  optional bool useItem = 3;
+}
+
+message SeaWarNextRegionResp {
+  int32 ret = 1;
+  SeaWarPlayerDataMsg playerData = 2;
+}
+
+message SeaWarUseItemReq {
+  int32 activityId = 1;
+  int32 num = 2;
+}
+
+message SeaWarUseItemResp {
+  int32 ret = 1;
+  SeaWarPlayerDataMsg playerData = 2;
+}
+
+message SeaWarWorshipResp {
+  int32 ret = 1;
+  string reward = 2;
+}
+
+// Folded from detailConfig.uniqueConfig (the client's "excel config"):
+// soulBall table (forge priority) + region table (energy, unlock).
+message SeaWarBuffConfigMsg {
+  int32 id = 2;
+  int32 type = 4;
+  int32 effect = 5;
+}
+
+message SeaWarRegionConfigMsg {
+  int32 id = 2;
+  int32 energy = 4;
+  string consumeCondition = 6;
+}
+
+message SeaWarConfigSync {
+  repeated SeaWarBuffConfigMsg seaWarBuffConfigMsgs = 2;
+  repeated SeaWarEventConfigMsg seaWarEventConfigMsgs = 3;
+  repeated SeaWarRegionConfigMsg seaWarRegionConfigMsgs = 6;
+}
+
+// ─── SeaWar assist + event config (field numbers verbatim from the
+// xor-1 SeaWar TextAsset; PlayerHead entries are opaque — only the list
+// length is read, per the client's help-box render). ────────────────────
+message SeaWarPlayerHeadRef {}
+
+message SeaWarHelpBoxMsg {
+  int64 assistId = 1;
+  int64 assistTime = 2;
+  repeated SeaWarPlayerHeadRef helpUsers = 3;
+  int64 playerId = 4;
+  int32 eventId = 5;
+  bool isReceive = 6;
+  int32 regionId = 7;
+  string playerName = 8;
+}
+
+message SeaWarUnionHelpPlayerEntity {
+  string nickName = 1;
+  int32 appearanceId = 2;
+  string unionName = 3;
+  SeaWarPlayerHeadRef headInfo = 4;
+  int32 backOrnamentId = 5;
+}
+
+message SeaWarAssistMsg {
+  int64 assistId = 1;
+  int32 monsterConfigId = 2;
+  string hp = 3;
+  string leftHp = 4;
+  string nickName = 5;
+  int64 assistTime = 6;
+  repeated SeaWarPlayerHeadRef helpUsers = 7;
+  int64 playerId = 8;
+  int32 eventId = 9;
+  int64 targetPlayerId = 10;
+  SeaWarUnionHelpPlayerEntity targetPlayer = 11;
+  string maxHp = 12;
+  bool isKilled = 13;
+  bool isReceive = 14;
+  int32 regionId = 15;
+}
+
+message SeaWarAssistData {
+  SeaWarHelpBoxMsg helpBoxInfos = 1;
+  SeaWarAssistMsg assistInfos = 2;
+  int32 type = 3;
+}
+
+message SeaWarAssistListResp {
+  int32 ret = 1;
+  repeated SeaWarAssistData data = 2;
+  int32 assistTimes = 3;
+  int32 helpBoxCount = 4;
+}
+
+message SeaWarAssistReq {
+  int32 activityId = 1;
+  // type=0 IS a value (fight assist, swAssistFight) — presence law as above.
+  optional int32 type = 2;
+  optional int64 targetPlayerId = 3;
+  optional int64 id = 4;
+}
+
+message SeaWarAssistRsp {
+  int32 ret = 1;
+  repeated SeaWarAssistData data = 2;
+  int32 assistTimes = 3;
+  string reward = 4;
+  int32 activityId = 5;
+  int32 helpBoxCount = 6;
+}
+
+message SeaWarAssistRewardReq {
+  int32 activityId = 1;
+  // presence law: type=0 = fight-reward claim.
+  optional int32 type = 2;
+  optional int64 id = 3;
+}
+
+message SeaWarAssistRewardRsp {
+  int32 ret = 1;
+  repeated SeaWarAssistData data = 2;
+  string reward = 3;
+  int32 activityId = 4;
+  repeated SeaWarBuffBallMsg buffBalls = 5;
+}
+
+message SeaWarEventConfigMsg {
+  int32 activityId = 1;
+  int32 id = 2;
+  int32 eventType = 3;
+  string param = 4;
+  string reward = 5;
+  int32 score = 6;
+  int32 exp = 7;
+  int32 protect = 8;
+  int32 points = 9;
+  string name = 10;
+  string desc = 11;
+}
+
+// ─── SeaWar chiến trường khiêu chiến (234931..234944) ──────────────────
+// ORDER-ONLY family (low16 0x95b3..0x95c0 hard ban on the auto engine —
+// [[tytd-item-ban]]): these packets leave the socket ONLY from a sanctioned
+// web order (bấm nhà trên map). Field numbers verbatim from the xor-1
+// SeaWar TextAsset; PlayerBaseDataMsg/BattleRecordMsg are shared types
+// modelled as label-only subsets (SkyTradePlayerBase pattern).
+message SeaWarPlayerBaseData {
+  int64 playerId = 1;
+  string nickName = 3;
+  int64 serverId = 8;
+}
+
+message SeaWarBattleRecordRef {} // client's full BattleRecordMsg not modelled
+
+message SeaWarPersonalRankInfo {
+  SeaWarPlayerBaseData playerBaseDataMsg = 1;
+  int32 rank = 2;
+  int64 score = 3;
+}
+
+message SeaWarUnionBaseData {
+  int64 unionId = 1;
+  int32 flag = 2;
+  string name = 3;
+  int64 serverId = 4;
+  string masterName = 5;
+}
+
+message SeaWarDeclarationTargetInfo {
+  int64 targetUnionId = 1;
+  int32 count = 2;
+}
+
+message SeaWarUnionChallengeMsg {
+  SeaWarUnionBaseData base = 1;
+  int32 rank = 2;
+  repeated SeaWarDeclarationTargetInfo targetInfos = 3;
+  int32 positionRank = 4;
+}
+
+message SeaWarChallengeListResp {
+  int32 ret = 1;
+  repeated SeaWarUnionChallengeMsg unionMsg = 2;
+  repeated SeaWarChallengeInfoSync infos = 3;
+  SeaWarPersonalRankInfo rankInfo = 5;
+  int64 lastNormalUnionId = 6;
+  int64 lastAdvancedUnionId = 7;
+  repeated int64 canBattleUnionIds = 8;
+  int32 freeNormalTimes = 9;
+}
+
+message SeaWarUnionGroupRankMsg {
+  int64 unionId = 1;
+  int32 rank = 2;
+}
+
+message SeaWarChallengePlayerDataMsg {
+  // field 1 (PlayerHeadDataMsg) opaque — labels only.
+  int32 appearanceId = 2;
+  string nickName = 3;
+  int32 equipCloudId = 4;
+}
+
+message SeaWarChallengeInfoSync {
+  int64 playerId = 1;
+  string unionName = 2;
+  string name = 3;
+  SeaWarChallengePlayerDataMsg appearance = 4;
+  int64 targetUnionId = 5;
+  string damage = 6;
+  repeated SeaWarUnionGroupRankMsg groupRankMsg = 7;
+  SeaWarPersonalRankInfo rankInfo = 8;
+  SeaWarBeChallengedInfo beChallengedInfo = 9;
+}
+
+message SeaWarBeChallengedInfo {
+  SeaWarPlayerBaseData playerBaseDataMsg = 1;
+  int32 rank = 2;
+  int32 roomId = 3;
+  int32 defeatedNum = 4;
+}
+
+message SeaWarDeclarationInfo {
+  SeaWarPlayerBaseData playerBaseDataMsg = 1;
+  // Owner law 2026-11-11: attempt counts are NEVER a local gate — the
+  // server ret is the sole arbiter ("không cần check xem có lượt hay không").
+  int32 challengeTimes = 2;
+  int32 roomId = 3;
+  int32 type = 4;
+  int64 time = 5;
+}
+
+message SeaWarEnterChallengeReq {
+  int32 activityId = 1;
+  int64 unionId = 2;
+}
+
+message SeaWarEnterChallengeResp {
+  int32 ret = 1;
+  SeaWarPersonalRankInfo personalRankInfo = 2;
+  repeated SeaWarDeclarationInfo declarationInfos = 3;
+}
+
+message SeaWarRoomInfoReq {
+  int32 activityId = 1;
+  int64 unionId = 2;
+  int32 roomId = 3;
+}
+
+message SeaWarRoomInfoResp {
+  int32 ret = 1;
+  repeated SeaWarBeChallengedInfo beChallengedInfos = 2;
+}
+
+message SeaWarChallengeReq {
+  int32 activityId = 1;
+  int64 unionId = 2;
+  int32 roomId = 3;
+  int64 playerId = 4;
+}
+
+message SeaWarChallengeResp {
+  int32 ret = 1;
+  SeaWarBattleRecordRef battleRecordMsg = 2;
+  string rewards = 3;
+  string damage = 4;
+  int32 activityId = 5;
+  int32 unionScore = 6;
+}
+// DECLARATION 234944 (tuyên chiến — the client's "chọn lệnh" step: type
+// 0=lệnh thường / 1=lệnh cao cấp, isFree=free-normal command; MUST precede
+// CHALLENGE_BATTLE or the server refuses the challenge). Outbound presence
+// law: type=0 / isFree=false are real values → optional + wrapper-set.
+message SeaWarDeclarationReq {
+  optional int32 activityId = 1;
+  optional int64 unionId = 2;
+  optional int32 type = 3;
+  optional bool isFree = 4;
+}
+message SeaWarDeclarationResp {
+  optional int32 ret = 1;
+  optional int32 activityId = 2;
+  optional int32 type = 3;
+  optional int32 freeNormalTimes = 4;
+  optional bool isFree = 5;
+}

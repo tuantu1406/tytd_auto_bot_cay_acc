@@ -1,0 +1,26 @@
+# ============================================================================
+#  TYTD AUTO BOT — FILE CẤU HÌNH (bản để sẵn cạnh binary)
+#
+#  CHỈ CẦN SỬA ĐÚNG 2 CHỖ đánh dấu  >>> SỬA <<<  ở dưới, còn lại để nguyên.
+#
+#  1. telegram_token : mở chat @BotFather trên Telegram, tạo bot (/newbot),
+#                     nó đưa 1 dòng token dạng  123456789:AAExxxxxxxx...
+#  2. admin_chat_id  : mở chat @userinfobot, nó trả về số Id của bạn.
+#
+#  Chạy bot:  đặt file này CÙNG THƯ MỤC với file main rồi chạy  ./main
+#
+#  ⚠️ File này chứa TOKEN = toàn quyền điều khiển bot Telegram.
+#     Không gửi cho bất kỳ ai. Không chụp màn hình đăng group.
+#     Nếu lỡ để lộ: vào @BotFather gõ /revoke để lấy token mới.
+# ============================================================================
+
+telegram_token: "9242411020:AAFbxtkOb2GMrb_pTnnmfXgYkAu1Qer3mzw"     # >>> SỬA <<<
+
+# (Nâng cao — chỉ dùng khi bạn được yêu cầu dùng token dạng mã hoá.
+#  Dùng 2 dòng trên thì KHÔNG cần quan tâm dòng này.)
+# telegram_token_encrypted: ""
+
+admin_chat_id: 8577743986                          # >>> SỬA <<< (số ID dương, không có dấu chấm phẩy)
+
+# Log chi tiết để lỗi (true/false) — người dùng thường cứ để false.
+debug: false
