@@ -535,6 +535,8 @@ TYTD_LIVE=1 TYTD_LIVE_USER=<acc-game> TYTD_LIVE_PASS=<pass> \
 
 Thiếu env thì live test **tự skip sạch** — vô tình `go test ./...` không bao giờ chạm tài khoản thật. Chỉ dùng **acc test**, tuyệt đối không acc chính.
 
+Muốn ghi và phân tích payload giao thức từ chính WebSocket của bot, xem [hướng dẫn capture packet](PACKET_CAPTURE.md). Chế độ này tắt mặc định; không capture socket của app game độc lập trong LDPlayer.
+
 Proto: sửa `internal/proto/tytd.proto` → `make proto` (cần `protoc` + `protoc-gen-go`).
 
 ---
