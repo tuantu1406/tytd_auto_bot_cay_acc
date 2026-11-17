@@ -686,6 +686,7 @@ func (p *Player) doWrite() {
 				log.Printf("[%s] websocket write error: %v", p.Username, err)
 				return
 			}
+			capturePacketFrame(p.Username, "out", msg)
 		}
 	}
 }
@@ -866,6 +867,7 @@ func (p *Player) wsHandler() {
 				p.cancel() // trigger shutdown
 				return
 			}
+			capturePacketFrame(p.Username, "in", message)
 			isMSG, msgType, realData := pack.Unpack(message)
 			if !isMSG {
 				log.Println("not msg")

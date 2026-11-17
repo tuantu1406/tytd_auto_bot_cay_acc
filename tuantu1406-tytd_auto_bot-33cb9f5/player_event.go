@@ -381,7 +381,6 @@ func (p *EventPlayer) doWrite() {
 	for {
 		select {
 		case <-p.ctx.Done():
-			log.Println(p.Username, "server disconnected")
 			return
 		case msg := <-p.writeChan:
 			p.conn.SetWriteDeadline(time.Now().Add(30 * time.Second))
@@ -391,6 +390,7 @@ func (p *EventPlayer) doWrite() {
 				log.Println(p.Username, "can't write, disconnect")
 				return
 			}
+			capturePacketFrame(p.Username, "out", msg)
 		}
 	}
 }
@@ -416,6 +416,10 @@ func (p *EventPlayer) Run() bool {
 		return false
 	}
 	defer c.Close()
+	defer func() {
+		p.Running = false
+		p.notifyRunning()
+	}()
 	c.SetPingHandler(func(string) error {
 		return c.SetReadDeadline(time.Now().Add(wsReadTimeout))
 	})
@@ -463,12 +467,12 @@ func (p *EventPlayer) Run() bool {
 
 func (p *EventPlayer) wsKeepAlive() {
 	for {
+		timer := time.NewTimer(5 * time.Second)
 		select {
 		case <-p.ctx.Done():
-			log.Println(p.Username, "server disconnected")
+			timer.Stop()
 			return
-		default:
-			time.Sleep(5 * time.Second)
+		case <-timer.C:
 			p.write(pack.Pack(PING_CMD, []byte{}, p.UID))
 		}
 	}
@@ -487,10 +491,13 @@ func (p *EventPlayer) eventWsHandler() {
 			p.conn.SetReadDeadline(time.Now().Add(wsReadTimeout))
 			_, message, err := p.conn.ReadMessage()
 			if err != nil {
-				log.Printf("[EventReader] Read error: %v", err)
+				if p.ctx.Err() == nil {
+					log.Printf("[EventReader] %s websocket read error: %v", p.Username, err)
+				}
 				p.cancel() // trigger shutdown
 				return
 			}
+			capturePacketFrame(p.Username, "in", message)
 			isMSG, msgType, realData := pack.Unpack(message)
 			if !isMSG {
 				continue
